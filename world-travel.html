@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORLD TRAVEL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Nanum+Gothic:wght@400;700;800&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e1210;--surface:#151a14;--panel:#1a2118;
+  --border:#2a3528;--border2:#364533;
+  --text:#c8e6c8;--muted:#6a8a6a;--dim:#2e3e2e;
+  --accent:#7ecf8e;--accent2:#4a9a5a;--accent3:#2d6e3d;
+  --red:#d45858;--yellow:#c8b840;--blue:#5a9acc;
+  --gold:#d4a820;
+  --glow:rgba(126,207,142,.15);
+}
+html,body{width:100%;height:100vh;overflow:hidden;background:var(--bg);font-family:'Nanum Gothic','Share Tech Mono',monospace;color:var(--text);font-size:12px}
+
+/* ── SCANLINE OVERLAY ── */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 3px);}
+
+.shell{display:flex;flex-direction:column;height:100vh;padding:8px;gap:6px}
+
+/* HEADER */
+.header{flex-shrink:0;height:38px;background:var(--surface);border:1px solid var(--border2);
+  display:flex;align-items:center;padding:0 14px;gap:12px;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(126,207,142,.04),transparent);}
+.h-title{font-family:'Black Han Sans',sans-serif;font-size:14px;color:var(--accent);letter-spacing:3px;flex-shrink:0;cursor:pointer;text-shadow:0 0 20px rgba(126,207,142,.4)}
+.h-home{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:1px;flex-shrink:0;transition:all .15s}
+.h-home:hover{border-color:var(--accent2);color:var(--accent);box-shadow:0 0 8px var(--glow)}
+.h-loc{font-size:9px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.5px}
+.h-count{font-size:9px;color:var(--dim);flex-shrink:0;letter-spacing:1px}
+
+/* SEARCH BAR */
+.search-bar{flex-shrink:0;height:32px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;padding:0 10px;gap:8px}
+.search-bar input{background:none;border:none;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;outline:none;flex:1;letter-spacing:.5px}
+.search-bar input::placeholder{color:var(--dim)}
+.search-icon{color:var(--muted);font-size:11px}
+.filter-wrap{display:flex;gap:4px}
+.ftag{background:none;border:1px solid var(--border);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 7px;cursor:pointer;letter-spacing:.5px;transition:all .15s}
+.ftag.on{border-color:var(--accent2);color:var(--accent);background:rgba(74,154,90,.1)}
+.ftag:hover{border-color:var(--muted);color:var(--muted)}
+.search-count{font-size:8px;color:var(--dim);flex-shrink:0;white-space:nowrap}
+
+/* MAIN */
+.main{flex:1;min-height:0;display:flex;gap:6px}
+
+/* VIEW */
+.view-wrap{flex:1;min-width:0;position:relative;border:1px solid var(--border2);background:#000;overflow:hidden;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+.scene{width:100%;height:100%;position:relative;overflow:hidden}
+.scene-img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .5s}
+.scene-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.1) 50%,transparent 70%);pointer-events:none}
+.scene-vign{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.5) 100%);pointer-events:none}
+.scene-info{position:absolute;bottom:74px;left:18px;right:18px;pointer-events:none}
+.si-name{font-family:'Black Han Sans',sans-serif;font-size:22px;color:#fff;letter-spacing:2px;margin-bottom:4px;text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.si-sub{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:2px;font-family:'Share Tech Mono',monospace}
+.si-desc{font-size:10px;color:rgba(255,255,255,.8);margin-top:8px;line-height:1.9;max-width:520px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+
+/* SIGNS */
+.signs-row{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;padding:0 12px}
+.sign{background:rgba(14,18,14,.9);border:1px solid var(--accent2);padding:6px 14px;font-size:10px;color:var(--accent);letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;backdrop-filter:blur(6px);font-weight:700}
+.sign:hover{background:rgba(74,154,90,.25);border-color:var(--accent);box-shadow:0 0 12px rgba(126,207,142,.2);transform:translateY(-1px)}
+.sign-arr{font-size:10px}
+
+/* COMPASS */
+.compass{position:absolute;top:14px;right:14px;width:52px;height:52px;border:1px solid var(--border2);background:rgba(14,18,14,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);box-shadow:0 0 16px rgba(0,0,0,.5)}
+.c-n{position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--accent);font-weight:700;font-family:'Share Tech Mono',monospace}
+.c-needle{position:absolute;left:50%;top:50%;width:2px;height:13px;background:linear-gradient(to bottom,var(--red),#ff8888);transform-origin:50% 100%;transform:translateX(-50%) translateY(-100%) rotate(0deg);transition:transform .4s;border-radius:1px}
+
+/* CONTROLS */
+.controls{position:absolute;top:14px;left:14px;display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(2,34px);gap:3px}
+.cb{background:rgba(14,18,14,.88);border:1px solid var(--border2);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:all .1s;border-radius:2px}
+.cb:hover{background:rgba(74,154,90,.3);border-color:var(--accent2);box-shadow:0 0 8px var(--glow)}
+.cb:active{background:rgba(100,180,110,.5);transform:scale(.95)}
+.cb.empty{background:none;border:none;pointer-events:none}
+
+/* SIDE */
+.side{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.panel{background:var(--surface);border:1px solid var(--border);padding:10px 12px}
+.pt{font-size:8px;color:var(--muted);letter-spacing:2px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.loc-name{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--accent);margin-bottom:2px}
+.loc-coord{font-size:9px;color:var(--dim);margin-bottom:6px;font-family:'Share Tech Mono',monospace}
+.loc-tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:8px;color:var(--accent2);border:1px solid var(--dim);padding:1px 5px;letter-spacing:.5px}
+.map-wrap{height:115px;background:var(--panel);position:relative;overflow:hidden;border:1px solid var(--border)}
+.map-iframe{width:100%;height:100%;border:none;opacity:.75;pointer-events:none}
+.map-pin{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 0 3px rgba(126,207,142,.3),0 0 12px rgba(126,207,142,.4);z-index:2;pointer-events:none;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(126,207,142,.3),0 0 12px rgba(126,207,142,.4)}50%{box-shadow:0 0 0 6px rgba(126,207,142,.1),0 0 20px rgba(126,207,142,.3)}}
+
+/* QUEST */
+.quest-panel{background:var(--surface);border:1px solid var(--border);overflow:hidden}
+.qlist{display:flex;flex-direction:column;gap:2px;max-height:90px;overflow-y:auto;padding:0 4px 4px}
+.qi{padding:5px 6px;font-size:9px;display:flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:1px}
+.qi.done{color:var(--accent2)}
+.qi.active{color:var(--text);border-color:var(--border)}
+.qi.locked{color:var(--dim)}
+.qi-icon{width:14px;height:14px;flex-shrink:0;border:1px solid var(--dim);display:flex;align-items:center;justify-content:center;font-size:8px;border-radius:1px}
+.qi.done .qi-icon{border-color:var(--accent2);background:rgba(74,154,90,.2);color:var(--accent)}
+.qi-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qi-prog{font-size:8px;color:var(--dim);flex-shrink:0;font-family:'Share Tech Mono',monospace}
+
+/* VISITED */
+.vlist{display:flex;flex-direction:column;gap:2px;max-height:100px;overflow-y:auto}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:1px}
+.vi{padding:4px 6px;font-size:9px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px;border:1px solid transparent;transition:all .1s}
+.vi:hover{border-color:var(--border2);color:var(--text)}
+.vi.cur{color:var(--accent)}
+.vdot{width:5px;height:5px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.vi.cur .vdot{background:var(--accent);box-shadow:0 0 4px var(--accent)}
+.vtime{margin-left:auto;color:var(--dim);font-size:8px;font-family:'Share Tech Mono',monospace}
+
+/* FOOTER */
+.footer{flex-shrink:0;height:22px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:12px;font-size:9px;color:var(--muted)}
+.fsep{width:1px;height:10px;background:var(--border2)}
+.fk{color:var(--accent);margin-right:2px}
+.f-score{margin-left:auto;color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px}
+
+/* FLASH */
+.flash{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .18s;z-index:10}
+.flash.on{opacity:.8}
+
+/* ── QUIZ POPUP ── */
+.quiz-ov{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.quiz-ov.show{display:flex}
+.quiz-box{background:var(--surface);border:1px solid var(--accent2);width:420px;max-width:90vw;padding:0;overflow:hidden;box-shadow:0 0 40px rgba(126,207,142,.15),0 0 80px rgba(0,0,0,.5)}
+.quiz-head{background:var(--panel);border-bottom:1px solid var(--border2);padding:14px 18px;display:flex;align-items:center;gap:10px}
+.quiz-icon{font-size:20px}
+.quiz-title{font-family:'Black Han Sans',sans-serif;font-size:14px;color:var(--accent);letter-spacing:2px}
+.quiz-sub{font-size:8px;color:var(--muted);margin-top:2px;letter-spacing:1px}
+.quiz-body{padding:20px 18px}
+.quiz-q{font-size:12px;color:var(--text);line-height:1.9;margin-bottom:16px;font-weight:700}
+.quiz-opts{display:flex;flex-direction:column;gap:6px}
+.qopt{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Nanum Gothic',sans-serif;font-size:10px;padding:9px 14px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s;width:100%}
+.qopt:hover{border-color:var(--accent2);color:var(--text);background:rgba(74,154,90,.06)}
+.qopt.correct{border-color:var(--accent);background:rgba(74,154,90,.2);color:var(--accent);pointer-events:none}
+.qopt.wrong{border-color:var(--red);background:rgba(212,88,88,.1);color:var(--red);pointer-events:none}
+.qopt-num{width:18px;height:18px;border:1px solid var(--dim);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;font-family:'Share Tech Mono',monospace}
+.quiz-result{display:none;padding:14px 18px;border-top:1px solid var(--border2);background:var(--panel)}
+.qr-text{font-size:11px;margin-bottom:12px;line-height:1.8}
+.qr-btn{background:none;border:1px solid var(--accent2);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:9px;padding:7px 18px;cursor:pointer;letter-spacing:1px;transition:all .15s}
+.qr-btn:hover{background:rgba(74,154,90,.15);box-shadow:0 0 10px var(--glow)}
+
+/* ── ACHIEVEMENT POPUP ── */
+.ach-ov{position:fixed;top:60px;right:20px;z-index:700;display:none;flex-direction:column;gap:6px;max-width:260px}
+.ach-card{background:var(--surface);border:1px solid var(--gold);padding:12px 16px;animation:achIn .3s ease,achOut .3s ease 3.7s forwards;box-shadow:0 0 20px rgba(212,168,32,.2)}
+@keyframes achIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes achOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(30px)}}
+.ach-title{font-size:8px;color:var(--gold);letter-spacing:2px;margin-bottom:4px}
+.ach-name{font-family:'Black Han Sans',sans-serif;font-size:12px;color:var(--text);margin-bottom:2px}
+.ach-desc{font-size:9px;color:var(--muted)}
+
+/* ── SEARCH PANEL DROPDOWN ── */
+.search-results{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-top:none;z-index:200;max-height:200px;overflow-y:auto;display:none}
+.sr-item{padding:8px 12px;font-size:10px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .1s;border-bottom:1px solid var(--border)}
+.sr-item:hover{background:var(--panel);color:var(--text)}
+.sr-flag{font-size:12px;width:18px;text-align:center}
+.sr-tags{font-size:8px;color:var(--dim);margin-left:auto;display:flex;gap:3px}
+.sr-tag{border:1px solid var(--dim);padding:1px 4px}
+
+/* ── LANDING ── */
+.start-ov{position:fixed;inset:0;z-index:600;display:flex;align-items:stretch}
+.s-earth-wrap{flex:1;position:relative;overflow:hidden}
+.s-earth-bg{width:100%;height:100%;background:url('https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/1280px-The_Earth_seen_from_Apollo_17.jpg') center/cover no-repeat;filter:brightness(.5) contrast(1.15) saturate(.7)}
+.s-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.05),rgba(0,0,0,.6))}
+.s-scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.1) 2px,rgba(0,0,0,.1) 3px)}
+.s-grid-h{position:absolute;left:0;right:0;height:1px;background:#d03030;opacity:.3}
+.s-grid-h1{top:14%}.s-grid-h2{top:83%}
+.s-grid-v{position:absolute;top:0;bottom:0;width:1px;background:#d03030;opacity:.18}
+.s-grid-v1{left:25%}.s-grid-v2{right:35%}
+.s-lbl{position:absolute;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.6}
+.s-blink{animation:sblink 1.4s steps(1) infinite}
+@keyframes sblink{0%,100%{opacity:1}50%{opacity:0}}
+.s-crosshair{position:absolute;width:140px;height:140px;top:50%;left:50%;transform:translate(-65%,-50%);animation:srot 28s linear infinite}
+@keyframes srot{from{transform:translate(-65%,-50%) rotate(0deg)}to{transform:translate(-65%,-50%) rotate(360deg)}}
+.s-corner{position:absolute;width:28px;height:28px}
+.s-corner-tl{top:10px;left:10px}.s-corner-tr{top:10px;right:10px}
+.s-corner-bl{bottom:10px;left:10px}.s-corner-br{bottom:10px;right:10px}
+.s-panel{width:360px;flex-shrink:0;background:rgba(8,14,8,.96);border-left:1px solid var(--border2);display:flex;align-items:center;justify-content:center;position:relative}
+.s-panel::before{content:'';position:absolute;top:10%;bottom:10%;left:0;width:2px;background:linear-gradient(to bottom,transparent,#d03030 30%,#d03030 70%,transparent);opacity:.5}
+.s-inner{padding:32px 32px 32px 40px;width:100%}
+.sp-pre{font-size:8px;color:#d03030;letter-spacing:2px;margin-bottom:16px;font-family:'Share Tech Mono',monospace}
+.sp-title{font-family:'Black Han Sans',sans-serif;font-size:40px;color:var(--accent);letter-spacing:5px;line-height:1.1;margin-bottom:14px;text-shadow:0 0 30px rgba(126,207,142,.3)}
+.sp-sub{font-size:9px;color:var(--muted);line-height:2.2;margin-bottom:18px;letter-spacing:.5px}
+.sp-div{height:1px;background:var(--border2);margin-bottom:18px}
+.sp-opts{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.sp-opt{border:1px solid var(--border);padding:12px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;transition:all .15s}
+.sp-opt:hover{border-color:var(--accent2);background:rgba(74,154,90,.06);box-shadow:0 0 16px rgba(126,207,142,.08)}
+.sp-arr{color:var(--accent2);font-size:11px;margin-top:2px;flex-shrink:0}
+.sp-opt-t{font-size:10px;color:var(--text);font-weight:700;margin-bottom:3px;letter-spacing:.5px}
+.sp-opt-s{font-size:8px;color:var(--dim);letter-spacing:.5px}
+.sp-foot{font-size:8px;color:var(--dim);letter-spacing:2px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-family:'Share Tech Mono',monospace}
+.geo-wrap{display:none;margin-top:12px}
+.city-grid{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;max-height:80px;overflow-y:auto}
+.cbtn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:8px;padding:3px 7px;cursor:pointer;transition:all .1s}
+.cbtn:hover{border-color:var(--accent2);color:var(--accent)}
+.geo-row{display:flex;gap:5px;margin-bottom:6px}
+.geo-row input{flex:1;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;padding:7px 8px;outline:none;transition:border-color .15s}
+.geo-row input:focus{border-color:var(--accent2)}
+.geo-row input::placeholder{color:var(--dim)}
+.btn-row{display:flex;justify-content:flex-end}
+.btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 16px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--text);color:var(--text)}
+.btn.pri{border-color:var(--accent2);color:var(--accent)}
+.btn.pri:hover{background:rgba(74,154,90,.12);box-shadow:0 0 12px var(--glow)}
+
+/* SCORE BADGE */
+.score-badge{position:absolute;top:14px;right:80px;background:rgba(14,18,14,.9);border:1px solid var(--gold);padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:1px;backdrop-filter:blur(6px)}
+.score-num{font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div class="start-ov" id="start-ov">
+  <div class="s-earth-wrap">
+    <div class="s-earth-bg"></div>
+    <div class="s-overlay"></div>
+    <div class="s-scan"></div>
+    <div class="s-grid-h s-grid-h1"></div>
+    <div class="s-grid-h s-grid-h2"></div>
+    <div class="s-grid-v s-grid-v1"></div>
+    <div class="s-grid-v s-grid-v2"></div>
+    <div class="s-lbl" style="top:3%;left:3%;color:#d03030">EM-2025-WTRAV</div>
+    <div class="s-lbl" style="top:3%;right:4%;color:#d03030">WORLD TRAVEL // SYS</div>
+    <div class="s-lbl" style="top:8%;left:3%;color:var(--accent2)">LOAD // DESTINATION_MODULE</div>
+    <div class="s-lbl" style="bottom:4%;left:3%;color:#d03030">RENDERING SCAN</div>
+    <div class="s-lbl" style="bottom:4%;right:4%;color:#d03030">COORD-STUDY-2025</div>
+    <div class="s-lbl" style="top:48%;left:3%;color:var(--accent);font-size:8px;font-family:'Share Tech Mono',monospace">LAT // 0.0000<br>LNG // 0.0000<br>ALT // 408KM</div>
+    <div class="s-lbl s-blink" style="top:18%;right:5%;color:#d4c840;font-size:9px">● SYSTEMS ONLINE</div>
+    <svg class="s-crosshair" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="30" stroke="#d03030" stroke-width=".8" fill="none" opacity=".6"/>
+      <circle cx="50" cy="50" r="3" stroke="#d03030" stroke-width=".8" fill="none"/>
+      <line x1="50" y1="8" x2="50" y2="38" stroke="#d03030" stroke-width=".6" opacity=".7"/>
+      <line x1="50" y1="62" x2="50" y2="92" stroke="#d03030" stroke-width=".6" opacity=".7"/>
+      <line x1="8" y1="50" x2="38" y2="50" stroke="#d03030" stroke-width=".6" opacity=".7"/>
+      <line x1="62" y1="50" x2="92" y2="50" stroke="#d03030" stroke-width=".6" opacity=".7"/>
+    </svg>
+    <svg class="s-corner s-corner-tl" viewBox="0 0 30 30"><path d="M0 28 L0 0 L28 0" stroke="#d03030" stroke-width="1.5" fill="none"/></svg>
+    <svg class="s-corner s-corner-tr" viewBox="0 0 30 30"><path d="M30 28 L30 0 L2 0" stroke="#d03030" stroke-width="1.5" fill="none"/></svg>
+    <svg class="s-corner s-corner-bl" viewBox="0 0 30 30"><path d="M0 2 L0 30 L28 30" stroke="#d03030" stroke-width="1.5" fill="none"/></svg>
+    <svg class="s-corner s-corner-br" viewBox="0 0 30 30"><path d="M30 2 L30 30 L2 30" stroke="#d03030" stroke-width="1.5" fill="none"/></svg>
+  </div>
+
+  <div class="s-panel">
+    <div class="s-inner">
+      <div class="sp-pre">WORLD TRAVEL // DESTINATION_SELECT</div>
+      <div class="sp-title">WORLD<br>TRAVEL</div>
+      <div class="sp-sub">표지판을 따라 세계를 여행하세요.<br>33개 큐레이션 명소 · 퀴즈 · 도전과제</div>
+      <div class="sp-div"></div>
+      <div class="sp-opts">
+        <div class="sp-opt" onclick="startGeo()">
+          <span class="sp-arr">→</span>
+          <div>
+            <div class="sp-opt-t">현재 위치에서 시작</div>
+            <div class="sp-opt-s">GPS · 가장 가까운 명소로 자동 이동</div>
+          </div>
+        </div>
+        <div class="sp-opt" onclick="showManual()">
+          <span class="sp-arr">→</span>
+          <div>
+            <div class="sp-opt-t">도시 선택 / 좌표 입력</div>
+            <div class="sp-opt-s">원하는 출발지를 직접 설정</div>
+          </div>
+        </div>
+      </div>
+      <div class="geo-wrap" id="geo-wrap">
+        <div class="city-grid" id="city-grid"></div>
+        <div class="geo-row">
+          <input type="number" id="inp-lat" placeholder="위도 (37.5796)" step="0.0001">
+          <input type="number" id="inp-lng" placeholder="경도 (126.977)" step="0.0001">
+        </div>
+        <div class="btn-row"><button class="btn pri" onclick="startManual()">출발 →</button></div>
+      </div>
+      <div class="sp-foot">NEURAL ACCESS · DESTINATION GRANTED · v2.0</div>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ POPUP -->
+<div class="quiz-ov" id="quiz-ov">
+  <div class="quiz-box">
+    <div class="quiz-head">
+      <div class="quiz-icon">🧩</div>
+      <div>
+        <div class="quiz-title">넌센스 퀴즈</div>
+        <div class="quiz-sub">맞히면 포인트 획득! 틀려도 여행은 계속</div>
+      </div>
+    </div>
+    <div class="quiz-body">
+      <div class="quiz-q" id="quiz-q">문제</div>
+      <div class="quiz-opts" id="quiz-opts"></div>
+    </div>
+    <div class="quiz-result" id="quiz-result">
+      <div class="qr-text" id="qr-text"></div>
+      <button class="qr-btn" id="qr-btn" onclick="closeQuiz()">여행 계속 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACHIEVEMENT OVERLAY -->
+<div class="ach-ov" id="ach-ov"></div>
+
+<!-- SHELL -->
+<div class="shell">
+  <div class="header">
+    <div class="h-title" onclick="goHome()">WORLD TRAVEL</div>
+    <button class="h-home" onclick="goHome()">← HOME</button>
+    <div class="h-loc" id="h-loc">—</div>
+    <div class="h-count" id="h-count">0 / 33 방문</div>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="search-bar" style="position:relative">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search-inp" placeholder="명소 검색... (국가, 도시, 태그)" oninput="onSearch(this.value)" onfocus="onSearchFocus()" onblur="onSearchBlur()">
+    <div class="filter-wrap" id="filter-wrap"></div>
+    <span class="search-count" id="search-count">33곳</span>
+    <div class="search-results" id="search-results"></div>
+  </div>
+
+  <div class="main">
+    <div class="view-wrap">
+      <div class="scene" id="scene">
+        <img class="scene-img" id="scene-img" src="" alt="">
+        <div class="scene-grad"></div>
+        <div class="scene-vign"></div>
+        <div class="scene-info">
+          <div class="si-name" id="si-name"></div>
+          <div class="si-sub" id="si-sub"></div>
+          <div class="si-desc" id="si-desc"></div>
+        </div>
+        <div class="signs-row" id="signs-row"></div>
+        <div class="flash" id="flash"></div>
+      </div>
+      <div class="compass">
+        <div class="c-n">N</div>
+        <div class="c-needle" id="needle"></div>
+      </div>
+      <div class="score-badge">
+        <div style="font-size:8px;letter-spacing:1px;color:var(--muted);margin-bottom:2px">SCORE</div>
+        <span class="score-num" id="score-disp">0</span>
+      </div>
+      <div class="controls">
+        <div class="cb empty"></div>
+        <div class="cb" onclick="move('n')" title="북쪽(↑)">↑</div>
+        <div class="cb empty"></div>
+        <div class="cb" onclick="move('w')" title="서쪽(←)">←</div>
+        <div class="cb" onclick="move('s')" title="남쪽(↓)">↓</div>
+        <div class="cb" onclick="move('e')" title="동쪽(→)">→</div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="pt">LOCATION</div>
+        <div class="loc-name" id="loc-name">—</div>
+        <div class="loc-coord" id="loc-coord">—</div>
+        <div class="loc-tags" id="loc-tags"></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);overflow:hidden">
+        <div class="pt" style="padding:8px 12px 6px;margin:0">MAP</div>
+        <div class="map-wrap">
+          <iframe class="map-iframe" id="minimap" src="about:blank"></iframe>
+          <div class="map-pin"></div>
+        </div>
+      </div>
+      <!-- QUEST -->
+      <div class="quest-panel">
+        <div class="pt" style="padding:8px 12px 6px;margin:0">QUESTS</div>
+        <div class="qlist" id="qlist"></div>
+      </div>
+      <!-- VISITED -->
+      <div class="panel" style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div class="pt">VISITED</div>
+        <div class="vlist" id="vlist"><div style="font-size:9px;color:var(--dim)">아직 방문 기록 없음</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span><span class="fk">↑↓←→</span>이동</span>
+    <div class="fsep"></div>
+    <span><span class="fk">표지판</span>클릭</span>
+    <div class="fsep"></div>
+    <span id="f-signs">표지판 0개</span>
+    <div class="fsep"></div>
+    <span>33곳 큐레이션</span>
+    <div class="fsep" style="margin-left:auto"></div>
+    <span class="f-score" id="f-score">✦ 0 PT</span>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────
+const PLACES=[
+  {id:'shibuya',name:'도쿄 시부야',en:'Shibuya Crossing, Tokyo',lat:35.6595,lng:139.7005,desc:'세계에서 가장 바쁜 교차로. 하루 25만 명이 건넌다.',tags:['일본','도시','번화가'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Shibuya_Crossing%2C_Tokyo.jpg/1280px-Shibuya_Crossing%2C_Tokyo.jpg',signs:[{label:'신주쿠',dir:'n',to:'shinjuku'},{label:'하라주쿠',dir:'w',to:'harajuku'},{label:'롯폰기',dir:'s',to:'roppongi'}]},
+  {id:'shinjuku',name:'도쿄 신주쿠',en:'Shinjuku, Tokyo',lat:35.6938,lng:139.7034,desc:'세계 최대 승객 수의 역. 네온사인과 골든가이의 도시.',tags:['일본','야경','도시'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Shinjuku_at_night.jpg/1280px-Shinjuku_at_night.jpg',signs:[{label:'시부야',dir:'s',to:'shibuya'},{label:'교토 기온',dir:'w',to:'gion'},{label:'아키하바라',dir:'e',to:'akihabara'}]},
+  {id:'harajuku',name:'하라주쿠 다케시타도리',en:'Takeshita Street, Harajuku',lat:35.6702,lng:139.7027,desc:'일본 팝컬처와 패션의 성지. 화려한 크레페와 코스튬.',tags:['일본','패션','청년문화'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Takeshita_Street_Harajuku.jpg/1280px-Takeshita_Street_Harajuku.jpg',signs:[{label:'시부야',dir:'e',to:'shibuya'},{label:'교토',dir:'w',to:'gion'}]},
+  {id:'roppongi',name:'도쿄 롯폰기',en:'Roppongi, Tokyo',lat:35.6627,lng:139.7314,desc:'도쿄의 밤문화와 현대미술의 중심. 모리 타워.',tags:['일본','현대','야경'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Roppongi_Hills_Mori_Tower.jpg/1280px-Roppongi_Hills_Mori_Tower.jpg',signs:[{label:'시부야',dir:'n',to:'shibuya'},{label:'도쿄타워',dir:'e',to:'tokyo_tower'}]},
+  {id:'tokyo_tower',name:'도쿄타워',en:'Tokyo Tower',lat:35.6586,lng:139.7454,desc:'1958년 완공. 높이 333m. 도쿄의 상징.',tags:['일본','랜드마크','야경'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Tokyo_Tower_and_surrounding_area_at_dusk.jpg/1280px-Tokyo_Tower_and_surrounding_area_at_dusk.jpg',signs:[{label:'롯폰기',dir:'w',to:'roppongi'},{label:'아사쿠사',dir:'n',to:'asakusa'}]},
+  {id:'asakusa',name:'도쿄 아사쿠사',en:'Senso-ji, Asakusa',lat:35.7148,lng:139.7967,desc:'도쿄에서 가장 오래된 절. 나카미세 상점가와 가미나리몬.',tags:['일본','전통','사원'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Senso-ji_Temple_Asakusa_2019.jpg/1280px-Senso-ji_Temple_Asakusa_2019.jpg',signs:[{label:'도쿄타워',dir:'s',to:'tokyo_tower'},{label:'서울 경복궁',dir:'w',to:'gyeongbok'},{label:'아키하바라',dir:'s',to:'akihabara'}]},
+  {id:'akihabara',name:'아키하바라',en:'Akihabara, Tokyo',lat:35.7022,lng:139.7741,desc:'세계 최대의 전자상가. 애니메이션·망가 문화의 메카.',tags:['일본','전자','문화'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Akihabara_dsc04444.jpg/1280px-Akihabara_dsc04444.jpg',signs:[{label:'아사쿠사',dir:'n',to:'asakusa'},{label:'신주쿠',dir:'w',to:'shinjuku'}]},
+  {id:'gion',name:'교토 기온',en:'Gion District, Kyoto',lat:35.0037,lng:135.7758,desc:'전통 찻집과 게이샤의 거리. 일본 전통문화의 중심지.',tags:['일본','전통','힐링'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Gion_Kyoto_Nov2014.jpg/1280px-Gion_Kyoto_Nov2014.jpg',signs:[{label:'후시미 이나리',dir:'s',to:'fushimi'},{label:'아라시야마',dir:'w',to:'arashiyama'},{label:'서울 경복궁',dir:'e',to:'gyeongbok'}]},
+  {id:'fushimi',name:'후시미 이나리',en:'Fushimi Inari, Kyoto',lat:34.9671,lng:135.7727,desc:'수천 개의 주홍 토리이가 이어지는 신비로운 산길.',tags:['일본','신사','자연'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Fushimi_Inari-taisha.jpg/1280px-Fushimi_Inari-taisha.jpg',signs:[{label:'교토 기온',dir:'n',to:'gion'},{label:'아라시야마',dir:'w',to:'arashiyama'}]},
+  {id:'arashiyama',name:'아라시야마 대나무숲',en:'Arashiyama Bamboo Grove',lat:35.0168,lng:135.6717,desc:'하늘을 가리는 푸른 대나무 터널. 교토 최고의 힐링 명소.',tags:['일본','자연','힐링'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Bamboo_groves_in_Arashiyama.jpg/800px-Bamboo_groves_in_Arashiyama.jpg',signs:[{label:'교토 기온',dir:'e',to:'gion'},{label:'후시미 이나리',dir:'e',to:'fushimi'}]},
+  {id:'gyeongbok',name:'경복궁',en:'Gyeongbokgung Palace, Seoul',lat:37.5796,lng:126.9770,desc:'1395년 조선 왕조의 정궁. 근정전과 경회루.',tags:['한국','역사','궁궐'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Gyeongbokgung-GeunjeongJeon-02.jpg/1280px-Gyeongbokgung-GeunjeongJeon-02.jpg',signs:[{label:'인사동',dir:'e',to:'insadong'},{label:'북촌 한옥마을',dir:'e',to:'bukchon'},{label:'교토 기온',dir:'e',to:'gion'},{label:'남산타워',dir:'s',to:'namsan'}]},
+  {id:'insadong',name:'인사동',en:'Insadong, Seoul',lat:37.5742,lng:126.9850,desc:'전통 공예품과 갤러리, 찻집이 모인 서울의 문화거리.',tags:['한국','문화','전통'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Insadong_street_Seoul.jpg/1280px-Insadong_street_Seoul.jpg',signs:[{label:'경복궁',dir:'w',to:'gyeongbok'},{label:'북촌',dir:'n',to:'bukchon'}]},
+  {id:'bukchon',name:'북촌 한옥마을',en:'Bukchon Hanok Village',lat:37.5824,lng:126.9840,desc:'600년 된 한옥이 빼곡히 들어선 서울의 숨겨진 골목.',tags:['한국','전통','골목'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Bukchon_Hanok_Village.jpg/1280px-Bukchon_Hanok_Village.jpg',signs:[{label:'경복궁',dir:'w',to:'gyeongbok'},{label:'인사동',dir:'s',to:'insadong'},{label:'파리 에펠탑',dir:'w',to:'eiffel'}]},
+  {id:'namsan',name:'남산 N서울타워',en:'N Seoul Tower, Namsan',lat:37.5512,lng:126.9882,desc:'서울 어디서나 보이는 236m 랜드마크. 연인들의 자물쇠.',tags:['한국','랜드마크','야경'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/N_Seoul_Tower_from_Namsan_Park.jpg/800px-N_Seoul_Tower_from_Namsan_Park.jpg',signs:[{label:'경복궁',dir:'n',to:'gyeongbok'},{label:'제주도',dir:'s',to:'jeju'}]},
+  {id:'jeju',name:'제주 한라산',en:'Hallasan, Jeju Island',lat:33.3617,lng:126.5292,desc:'대한민국 최고봉 1950m. 유네스코 세계자연유산.',tags:['한국','자연','화산'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Hallasan_national_park_04.jpg/1280px-Hallasan_national_park_04.jpg',signs:[{label:'남산타워',dir:'n',to:'namsan'},{label:'방콕',dir:'w',to:'bangkok'}]},
+  {id:'bangkok',name:'왓 아룬',en:'Wat Arun, Bangkok',lat:13.7437,lng:100.4888,desc:'새벽사원. 태국 불교 예술의 정수. 차오프라야강 변에 우뚝.',tags:['태국','사원','불교'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Wat_Arun_2012.jpg/800px-Wat_Arun_2012.jpg',signs:[{label:'제주도',dir:'e',to:'jeju'},{label:'앙코르 와트',dir:'w',to:'angkor'},{label:'싱가포르',dir:'s',to:'merlion'}]},
+  {id:'angkor',name:'앙코르 와트',en:'Angkor Wat, Cambodia',lat:13.4125,lng:103.8670,desc:'세계 최대의 종교 건축물. 크메르 제국의 영광.',tags:['캄보디아','유산','힌두교'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Angkor_Wat_temple_3.jpg/1280px-Angkor_Wat_temple_3.jpg',signs:[{label:'방콕',dir:'e',to:'bangkok'},{label:'싱가포르',dir:'s',to:'merlion'}]},
+  {id:'merlion',name:'싱가포르 머라이언',en:'Merlion Park, Singapore',lat:1.2868,lng:103.8545,desc:'사자머리·물고기몸의 국가 상징. 마리나베이의 아이콘.',tags:['싱가포르','도시','야경'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Merlion%2C_Singapore%2C_with_Marina_Bay_Sands_in_the_distance_-_20110906.jpg/1280px-Merlion%2C_Singapore%2C_with_Marina_Bay_Sands_in_the_distance_-_20110906.jpg',signs:[{label:'앙코르 와트',dir:'n',to:'angkor'},{label:'방콕',dir:'n',to:'bangkok'},{label:'시드니',dir:'e',to:'opera'}]},
+  {id:'eiffel',name:'파리 에펠탑',en:'Eiffel Tower, Paris',lat:48.8584,lng:2.2945,desc:'1889년 완공. 높이 330m. 매년 700만 명이 방문하는 세계 최고 랜드마크.',tags:['프랑스','랜드마크','유럽'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/800px-Tour_Eiffel_Wikimedia_Commons.jpg',signs:[{label:'루브르 박물관',dir:'e',to:'louvre'},{label:'몽마르트르',dir:'n',to:'montmartre'},{label:'로마 콜로세움',dir:'s',to:'colosseum'}]},
+  {id:'louvre',name:'루브르 박물관',en:'Louvre Museum, Paris',lat:48.8606,lng:2.3376,desc:'세계 최대 미술관. 38만여 점의 소장품. 모나리자의 집.',tags:['프랑스','예술','박물관'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Louvre_Museum_Wikimedia_Commons.jpg/1280px-Louvre_Museum_Wikimedia_Commons.jpg',signs:[{label:'에펠탑',dir:'w',to:'eiffel'},{label:'몽마르트르',dir:'n',to:'montmartre'}]},
+  {id:'montmartre',name:'파리 몽마르트르',en:'Montmartre, Paris',lat:48.8867,lng:2.3431,desc:'파리의 예술인 언덕. 사크레쾨르 성당과 화가들의 광장.',tags:['프랑스','예술','언덕'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Sacre_Coeur_church_paris.jpg/800px-Sacre_Coeur_church_paris.jpg',signs:[{label:'에펠탑',dir:'s',to:'eiffel'},{label:'루브르',dir:'s',to:'louvre'},{label:'바르셀로나',dir:'s',to:'sagrada'}]},
+  {id:'sagrada',name:'사그라다 파밀리아',en:'Sagrada Família, Barcelona',lat:41.4036,lng:2.1744,desc:'가우디의 미완성 걸작. 1882년 착공, 아직도 건축 중.',tags:['스페인','건축','가우디'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Sagrada_Familia_01.jpg/800px-Sagrada_Familia_01.jpg',signs:[{label:'파리 에펠탑',dir:'n',to:'eiffel'},{label:'로마 콜로세움',dir:'e',to:'colosseum'}]},
+  {id:'colosseum',name:'로마 콜로세움',en:'Colosseum, Rome',lat:41.8902,lng:12.4922,desc:'기원후 80년 완공. 5만 명을 수용했던 고대 원형경기장.',tags:['이탈리아','역사','고대'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Colosseo_2020.jpg/1280px-Colosseo_2020.jpg',signs:[{label:'트레비 분수',dir:'n',to:'trevi'},{label:'사그라다 파밀리아',dir:'w',to:'sagrada'},{label:'이스탄불',dir:'e',to:'hagia'}]},
+  {id:'trevi',name:'트레비 분수',en:'Trevi Fountain, Rome',lat:41.9009,lng:12.4833,desc:'바로크 양식의 걸작. 동전을 던지면 로마에 다시 온다는 전설.',tags:['이탈리아','분수','바로크'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Fountain_of_Trevi_%281%29.jpg/1280px-Fountain_of_Trevi_%281%29.jpg',signs:[{label:'콜로세움',dir:'s',to:'colosseum'},{label:'이스탄불',dir:'e',to:'hagia'}]},
+  {id:'hagia',name:'하기아 소피아',en:'Hagia Sophia, Istanbul',lat:41.0086,lng:28.9802,desc:'537년 완공. 동로마 제국의 성당이자 오스만의 모스크.',tags:['터키','역사','건축'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Hagia_Sophia_Istanbul_2014.jpg/1280px-Hagia_Sophia_Istanbul_2014.jpg',signs:[{label:'두바이',dir:'e',to:'burj'},{label:'로마',dir:'w',to:'colosseum'}]},
+  {id:'burj',name:'버즈 칼리파',en:'Burj Khalifa, Dubai',lat:25.1972,lng:55.2744,desc:'세계 최고층 빌딩. 높이 828m. 160층.',tags:['UAE','현대','랜드마크'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Burj_Khalifa_2020.jpg/800px-Burj_Khalifa_2020.jpg',signs:[{label:'이스탄불',dir:'w',to:'hagia'},{label:'시드니',dir:'e',to:'opera'},{label:'타지마할',dir:'e',to:'taj'}]},
+  {id:'taj',name:'타지마할',en:'Taj Mahal, Agra',lat:27.1751,lng:78.0421,desc:'무굴 황제가 왕비를 위해 지은 순백의 영묘. 세계 7대 불가사의.',tags:['인도','유산','건축'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Taj_Mahal_%28Edited%29.jpeg/1280px-Taj_Mahal_%28Edited%29.jpeg',signs:[{label:'두바이',dir:'w',to:'burj'},{label:'싱가포르',dir:'e',to:'merlion'}]},
+  {id:'opera',name:'시드니 오페라하우스',en:'Sydney Opera House',lat:-33.8568,lng:151.2153,desc:'20세기 건축의 걸작. 유네스코 세계유산.',tags:['호주','건축','해안'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Sydney_Opera_House_Bennelong_Point.jpg/1280px-Sydney_Opera_House_Bennelong_Point.jpg',signs:[{label:'두바이',dir:'w',to:'burj'},{label:'뉴욕',dir:'e',to:'times'},{label:'싱가포르',dir:'w',to:'merlion'}]},
+  {id:'times',name:'뉴욕 타임스퀘어',en:'Times Square, New York',lat:40.7580,lng:-73.9855,desc:'세계의 교차로. 빛나는 네온사인과 브로드웨이 뮤지컬.',tags:['미국','도시','야경'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/New_york_times_square-terabass.jpg/1280px-New_york_times_square-terabass.jpg',signs:[{label:'센트럴파크',dir:'n',to:'central'},{label:'자유의 여신상',dir:'s',to:'liberty'},{label:'시드니',dir:'w',to:'opera'}]},
+  {id:'central',name:'센트럴파크',en:'Central Park, New York',lat:40.7851,lng:-73.9683,desc:'맨해튼 한가운데 340만㎡의 도심 속 자연.',tags:['미국','자연','공원'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Central_Park_-_aerial_%282009%29.jpg/1280px-Central_Park_-_aerial_%282009%29.jpg',signs:[{label:'타임스퀘어',dir:'s',to:'times'},{label:'자유의 여신상',dir:'s',to:'liberty'}]},
+  {id:'liberty',name:'자유의 여신상',en:'Statue of Liberty, New York',lat:40.6892,lng:-74.0445,desc:'1886년 프랑스가 선물한 자유의 상징. 높이 93m.',tags:['미국','랜드마크','역사'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/24701-nature-natural-beauty-natural-beauty.jpg/800px-24701-nature-natural-beauty-natural-beauty.jpg',signs:[{label:'타임스퀘어',dir:'n',to:'times'},{label:'서울 경복궁',dir:'w',to:'gyeongbok'},{label:'마추픽추',dir:'s',to:'machu'}]},
+  {id:'machu',name:'마추픽추',en:'Machu Picchu, Peru',lat:-13.1631,lng:-72.5450,desc:'잉카 제국의 하늘 도시. 해발 2430m의 신비로운 유적.',tags:['페루','유산','자연'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Machu_Picchu%2C_Peru.jpg/1280px-Machu_Picchu%2C_Peru.jpg',signs:[{label:'자유의 여신상',dir:'n',to:'liberty'},{label:'리우데자네이루',dir:'e',to:'rio'}]},
+  {id:'rio',name:'예수 그리스도상',en:'Christ the Redeemer, Rio',lat:-22.9519,lng:-43.2105,desc:'높이 38m의 거대한 예수상. 코르코바도 산 정상에서 리우를 굽어본다.',tags:['브라질','랜드마크','종교'],img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Christ_the_Redeemer_-_Cristo_Redentor.jpg/800px-Christ_the_Redeemer_-_Cristo_Redentor.jpg',signs:[{label:'마추픽추',dir:'w',to:'machu'},{label:'파리 에펠탑',dir:'n',to:'eiffel'}]},
+];
+
+// ─── QUIZZES ────────────────────────────────────────────────────────────
+const QUIZZES=[
+  {q:'냉장고가 집에 들어오려면 어떻게 해야 할까요?',opts:['문을 열어줘야죠','냉장고를 작게 만든다','집을 크게 만든다','택배로 받는다'],ans:0,ok:'맞아요! 문을 열면 들어올 수 있죠 🚪',no:'아쉬워요! 냉장고가 들어오려면 당연히 문을 열어줘야죠.'},
+  {q:'세상에서 제일 빠른 닭은 무엇일까요?',opts:['전기닭','치타닭','KTX 닭','탈런트닭'],ans:3,ok:'정답! 탈런트닭 — 달리다(달란트)가 빠르니까요! 🐔',no:'아니에요! 세상에서 제일 빠른 닭은 "탈런트닭"이에요. 달리다!'},
+  {q:'아버지는 아들이고 아들은 아버지인 사람은?',opts:['쌍둥이','할아버지','왕','예언자'],ans:1,ok:'정답! 할아버지는 아버지의 아들이자, 아들의 아버지예요 👴',no:'아쉬워요! 할아버지는 아버지의 아들이고 아들의 아버지죠.'},
+  {q:'물은 물인데 먹을 수 없는 물은?',opts:['바닷물','수돗물','빗물','근육'],ans:3,ok:'빙고! 근육(근+육)은 물(근)이지만 먹을 수가 없죠 💪',no:'정답은 "근육"! 근육(筋肉)에 근(筋)은 힘줄이지 물이 아니에요... 아, 넌센스잖아요!'},
+  {q:'세상에서 가장 큰 코는?',opts:['코끼리 코','피노키오 코','멕시코','사람코'],ans:2,ok:'맞아요! 멕시코(멕시+코) — 가장 큰 코! 🌮',no:'정답은 멕시코! 멕시+코 = 세상에서 제일 큰 코!'},
+  {q:'소가 웃으면?',opts:['음머머머','웃긴 소','개그소','박장대소'],ans:2,ok:'정답! 개그소! 웃기는 소니까 개그소 🐄😂',no:'소가 웃으면 "개그소"! 개그+소 = 개그소!'},
+  {q:'세상에서 제일 빠른 새는?',opts:['독수리','매','황새','천재새'],ans:3,ok:'맞아요! 천재새 — 천재는 날 때부터 다르다! 🦅',no:'정답은 천재새! 천재는 날(飛) 때부터 다르니까요 ㅋㅋ'},
+  {q:'피자가 가장 좋아하는 운동은?',opts:['달리기','수영','피자돌리기','체조'],ans:2,ok:'피자돌리기! 피자 장인들이 하늘 위로 피자를 돌리잖아요 🍕',no:'피자가 좋아하는 운동은 "피자돌리기"! 피자 장인을 보세요~'},
+  {q:'말이 말하면?',opts:['네','예','마마','언어'],ans:2,ok:'마마! 말(馬)이 마마(Mama)를 외치는 거죠 🐴',no:'말이 말하면 "마마"! 말+말 = 마마!'},
+  {q:'지구에서 가장 긴 강은? (넌센스 버전)',opts:['아마존','나일강','한강','임신강'],ans:3,ok:'임신강! 임신(任信)하면 배가 불러 강이 길어진다? 😄',no:'넌센스 정답은 "임신강"! 임신하면 배(腹)가... 배(船)가 길어지니까!'},
+  {q:'가장 슬픈 가수는?',opts:['아이유','BTS','울림','나훈아'],ans:2,ok:'울림! 울+림 = 울림, 항상 울고 있는 가수! 😢🎤',no:'정답은 울림! 항상 울고(哭) 있는 가수니까요.'},
+  {q:'세상에서 가장 조용한 개는?',opts:['진돗개','치와와','무음견','퍼그'],ans:2,ok:'무음견! 무음(無音) + 견(犬) = 소리 없는 개! 🐕🤫',no:'무음견! 소리가 없는 개니까 무음+견(犬)이에요.'},
+];
+
+// ─── QUESTS ─────────────────────────────────────────────────────────────
+const QUESTS=[
+  {id:'q1',label:'첫 발걸음',desc:'첫 번째 명소 방문',check:s=>s.visited>=1,reward:50},
+  {id:'q2',label:'동아시아 탐험가',desc:'일본 명소 5곳 방문',check:s=>s.japan>=5,reward:150},
+  {id:'q3',label:'한국 여행자',desc:'한국 명소 전부 방문',check:s=>s.korea>=5,reward:200},
+  {id:'q4',label:'유럽 순례',desc:'유럽 명소 6곳 방문',check:s=>s.europe>=6,reward:300},
+  {id:'q5',label:'세계 일주',desc:'모든 명소 방문',check:s=>s.visited>=33,reward:1000},
+  {id:'q6',label:'퀴즈 달인',desc:'퀴즈 5번 정답',check:s=>s.quizCorrect>=5,reward:200},
+  {id:'q7',label:'베테랑 탐험가',desc:'10곳 이상 방문',check:s=>s.visited>=10,reward:250},
+  {id:'q8',label:'세계 7대 명소',desc:'세계 7대 불가사의 방문 (타지마할 포함)',check:s=>s.wonders>=1,reward:100},
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────
+const placeMap={};
+PLACES.forEach(p=>placeMap[p.id]=p);
+
+let cur=null, heading=0, visited=[], visitedSet=new Set();
+let score=0, quizCorrect=0, questsDone=new Set();
+let activeFilter=null, searchQ='';
+let quizPending=false;
+
+// TAG COUNTS for filter
+const allTags=['일본','한국','유럽','미국','자연','역사','야경'];
+
+// ─── FILTER BUTTONS ──────────────────────────────────────────────────────
+function buildFilters(){
+  const fw=document.getElementById('filter-wrap');
+  allTags.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='ftag';b.textContent=t;b.dataset.tag=t;
+    b.onclick=()=>toggleFilter(t,b);
+    fw.appendChild(b);
+  });
+}
+buildFilters();
+
+function toggleFilter(tag,btn){
+  if(activeFilter===tag){activeFilter=null;btn.classList.remove('on');}
+  else{
+    document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('on'));
+    activeFilter=tag;btn.classList.add('on');
+  }
+  updateSearch();
+}
+
+// ─── SEARCH ─────────────────────────────────────────────────────────────
+function getFiltered(){
+  return PLACES.filter(p=>{
+    const matchQ=!searchQ||p.name.includes(searchQ)||p.en.toLowerCase().includes(searchQ.toLowerCase())||p.tags.some(t=>t.includes(searchQ));
+    const matchF=!activeFilter||p.tags.some(t=>{
+      if(activeFilter==='유럽') return ['프랑스','이탈리아','스페인','터키'].includes(t)||p.id==='hagia';
+      if(activeFilter==='일본') return t==='일본';
+      if(activeFilter==='한국') return t==='한국';
+      if(activeFilter==='미국') return t==='미국';
+      return t===activeFilter;
+    });
+    return matchQ&&matchF;
+  });
+}
+
+function onSearch(v){searchQ=v.trim();updateSearch();}
+function updateSearch(){
+  const res=getFiltered();
+  document.getElementById('search-count').textContent=`${res.length}곳`;
+  const rd=document.getElementById('search-results');
+  if((!searchQ&&!activeFilter)||res.length===PLACES.length){rd.style.display='none';return;}
+  rd.style.display='block';
+  rd.innerHTML=res.slice(0,8).map(p=>`
+    <div class="sr-item" onmousedown="goTo('${p.id}',false);closeSearch()">
+      <span class="sr-flag">${flagOf(p)}</span>
+      <span style="flex:1">${p.name}</span>
+      <span style="font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace">${p.lat.toFixed(2)},${p.lng.toFixed(2)}</span>
+      <div class="sr-tags">${p.tags.slice(0,2).map(t=>`<span class="sr-tag">${t}</span>`).join('')}</div>
+    </div>`).join('')+(res.length>8?`<div style="font-size:8px;color:var(--dim);padding:6px 12px">${res.length-8}개 더...</div>`:'');
+}
+
+function flagOf(p){
+  const m={일본:'🇯🇵',한국:'🇰🇷',프랑스:'🇫🇷',이탈리아:'🇮🇹',스페인:'🇪🇸',터키:'🇹🇷',UAE:'🇦🇪',호주:'🇦🇺',미국:'🇺🇸',태국:'🇹🇭',캄보디아:'🇰🇭',싱가포르:'🇸🇬',인도:'🇮🇳',페루:'🇵🇪',브라질:'🇧🇷'};
+  for(const t of p.tags){if(m[t])return m[t];}return '🌐';
+}
+
+function onSearchFocus(){if(searchQ||activeFilter)updateSearch();}
+function onSearchBlur(){setTimeout(()=>{document.getElementById('search-results').style.display='none';},200);}
+function closeSearch(){document.getElementById('search-results').style.display='none';}
+
+// ─── CITY GRID ───────────────────────────────────────────────────────────
+function buildCityGrid(){
+  const g=document.getElementById('city-grid');
+  PLACES.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='cbtn';b.textContent=p.name;
+    b.onclick=()=>{document.getElementById('inp-lat').value=p.lat;document.getElementById('inp-lng').value=p.lng;};
+    g.appendChild(b);
+  });
+}
+buildCityGrid();
+
+// ─── LAUNCH ──────────────────────────────────────────────────────────────
+function startGeo(){
+  if(!navigator.geolocation){showManual();return;}
+  navigator.geolocation.getCurrentPosition(
+    pos=>{launch(findNearest(pos.coords.latitude,pos.coords.longitude).id);},
+    ()=>showManual()
+  );
+}
+function showManual(){document.getElementById('geo-wrap').style.display='block';}
+function startManual(){
+  const la=parseFloat(document.getElementById('inp-lat').value);
+  const ln=parseFloat(document.getElementById('inp-lng').value);
+  if(isNaN(la)||isNaN(ln))return;
+  launch(findNearest(la,ln).id);
+}
+function findNearest(la,ln){
+  let best=PLACES[0],bestD=Infinity;
+  PLACES.forEach(p=>{const d=Math.hypot(p.lat-la,p.lng-ln);if(d<bestD){bestD=d;best=p;}});
+  return best;
+}
+function launch(id){document.getElementById('start-ov').style.display='none';renderQuests();goTo(id,true);}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────
+function goTo(id,instant){
+  if(!id)return;
+  const p=placeMap[id];if(!p)return;
+  if(!instant){
+    const fl=document.getElementById('flash');
+    fl.classList.add('on');
+    setTimeout(()=>{fl.classList.remove('on');renderPlace(p);},220);
+  }else renderPlace(p);
+}
+
+function renderPlace(p){
+  cur=p;
+  const img=document.getElementById('scene-img');
+  img.style.opacity='0';img.src=p.img;
+  img.onload=()=>img.style.opacity='1';
+  document.getElementById('si-name').textContent=p.name;
+  document.getElementById('si-sub').textContent=p.en;
+  document.getElementById('si-desc').textContent=p.desc;
+  document.getElementById('h-loc').textContent=`${p.en}  (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})`;
+  document.getElementById('loc-name').textContent=p.name;
+  document.getElementById('loc-coord').textContent=`${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
+  document.getElementById('loc-tags').innerHTML=p.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  document.getElementById('f-signs').textContent=`표지판 ${p.signs.length}개`;
+  renderSigns(p);
+  document.getElementById('minimap').src=`https://www.openstreetmap.org/export/embed.html?bbox=${p.lng-.025},${p.lat-.018},${p.lng+.025},${p.lat+.018}&layer=mapnik&marker=${p.lat},${p.lng}`;
+  addVisited(p);
+  // random quiz: 30% chance
+  if(!quizPending&&Math.random()<0.3)setTimeout(triggerQuiz,800);
+}
+
+function renderSigns(p){
+  const arr={n:'↑',s:'↓',e:'→',w:'←'};
+  document.getElementById('signs-row').innerHTML=p.signs.map(s=>`
+    <div class="sign" onclick="goSign('${s.to}','${s.dir}')">
+      <span class="sign-arr">${arr[s.dir]||'→'}</span>${s.label}
+    </div>`).join('');
+}
+
+function goSign(toId,dir){
+  const hdg={n:0,s:180,e:90,w:270};
+  heading=hdg[dir]||0;
+  document.getElementById('needle').style.transform=`translateX(-50%) translateY(-100%) rotate(${heading}deg)`;
+  goTo(toId,false);
+}
+
+function move(dir){
+  if(!cur)return;
+  const s=cur.signs.find(s=>s.dir===dir);
+  if(s)goSign(s.to,s.dir);
+  else{const fl=document.getElementById('flash');fl.classList.add('on');setTimeout(()=>fl.classList.remove('on'),160);}
+}
+
+document.addEventListener('keydown',e=>{
+  const m={ArrowUp:'n',ArrowDown:'s',ArrowLeft:'w',ArrowRight:'e'};
+  if(m[e.key]){e.preventDefault();move(m[e.key]);}
+});
+
+// ─── VISITED ─────────────────────────────────────────────────────────────
+function addVisited(p){
+  const isNew=!visitedSet.has(p.id);
+  if(isNew){
+    visitedSet.add(p.id);
+    visited.unshift({...p,time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});
+    addScore(20,'방문 +20');
+  }else{
+    visited=[visited.find(v=>v.id===p.id),...visited.filter(v=>v.id!==p.id)];
+  }
+  document.getElementById('h-count').textContent=`${visitedSet.size} / 33 방문`;
+  document.getElementById('vlist').innerHTML=visited.map((v,i)=>`
+    <div class="vi ${i===0?'cur':''}" onclick="goTo('${v.id}',false)">
+      <div class="vdot"></div>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.name}</span>
+      <span class="vtime">${v.time}</span>
+    </div>`).join('');
+  checkQuests();
+}
+
+// ─── SCORE ───────────────────────────────────────────────────────────────
+function addScore(n){
+  score+=n;
+  document.getElementById('score-disp').textContent=score.toLocaleString();
+  document.getElementById('f-score').textContent=`✦ ${score.toLocaleString()} PT`;
+}
+
+// ─── QUESTS ──────────────────────────────────────────────────────────────
+function getStats(){
+  const ids=[...visitedSet];
+  return {
+    visited:ids.length,
+    japan:ids.filter(id=>placeMap[id]&&placeMap[id].tags.includes('일본')).length,
+    korea:ids.filter(id=>placeMap[id]&&placeMap[id].tags.includes('한국')).length,
+    europe:ids.filter(id=>placeMap[id]&&['eiffel','louvre','montmartre','sagrada','colosseum','trevi','hagia'].includes(id)).length,
+    quizCorrect,
+    wonders:ids.filter(id=>['taj','machu','colosseum'].includes(id)).length,
+  };
+}
+
+function checkQuests(){
+  const stats=getStats();
+  QUESTS.forEach(q=>{
+    if(!questsDone.has(q.id)&&q.check(stats)){
+      questsDone.add(q.id);
+      addScore(q.reward);
+      showAchievement(q.label,q.desc,q.reward);
+    }
+  });
+  renderQuests();
+}
+
+function renderQuests(){
+  const stats=getStats();
+  document.getElementById('qlist').innerHTML=QUESTS.map(q=>{
+    const done=questsDone.has(q.id);
+    return `<div class="qi ${done?'done':'active'}">
+      <div class="qi-icon">${done?'✓':'○'}</div>
+      <span class="qi-label">${q.label}</span>
+      <span class="qi-prog" style="color:${done?'var(--gold)':'var(--dim)'}">+${q.reward}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── ACHIEVEMENT ─────────────────────────────────────────────────────────
+function showAchievement(name,desc,pts){
+  const ov=document.getElementById('ach-ov');
+  ov.style.display='flex';
+  const card=document.createElement('div');
+  card.className='ach-card';
+  card.innerHTML=`<div class="ach-title">✦ ACHIEVEMENT UNLOCKED</div>
+    <div class="ach-name">${name}</div>
+    <div class="ach-desc">${desc} — <span style="color:var(--gold)">+${pts}PT</span></div>`;
+  ov.appendChild(card);
+  setTimeout(()=>{card.remove();if(!ov.children.length)ov.style.display='none';},4200);
+}
+
+// ─── QUIZ ────────────────────────────────────────────────────────────────
+let currentQuiz=null;
+
+function triggerQuiz(){
+  quizPending=true;
+  currentQuiz=QUIZZES[Math.floor(Math.random()*QUIZZES.length)];
+  const ov=document.getElementById('quiz-ov');
+  document.getElementById('quiz-q').textContent=currentQuiz.q;
+  document.getElementById('quiz-opts').innerHTML=currentQuiz.opts.map((o,i)=>`
+    <button class="qopt" onclick="answerQuiz(${i})">
+      <span class="qopt-num">${String.fromCharCode(65+i)}</span>${o}
+    </button>`).join('');
+  document.getElementById('quiz-result').style.display='none';
+  document.getElementById('qr-btn').textContent='여행 계속 →';
+  ov.classList.add('show');
+}
+
+function answerQuiz(i){
+  const q=currentQuiz;
+  const btns=document.querySelectorAll('.qopt');
+  btns.forEach((b,j)=>{
+    if(j===q.ans)b.classList.add('correct');
+    else if(j===i&&i!==q.ans)b.classList.add('wrong');
+    b.disabled=true;
+  });
+  const correct=i===q.ans;
+  const res=document.getElementById('quiz-result');
+  const txt=document.getElementById('qr-text');
+  res.style.display='block';
+  if(correct){
+    quizCorrect++;
+    addScore(100);
+    txt.innerHTML=`<span style="color:var(--accent);font-size:14px;font-weight:700">🎉 정답!</span><br><span style="color:var(--muted)">${q.ok}</span><br><span style="color:var(--gold)">+100PT 획득!</span>`;
+    checkQuests();
+  }else{
+    txt.innerHTML=`<span style="color:var(--red);font-size:14px;font-weight:700">😅 오답!</span><br><span style="color:var(--muted)">${q.no}</span><br><span style="color:var(--dim)">여행을 계속하세요.</span>`;
+  }
+}
+
+function closeQuiz(){
+  document.getElementById('quiz-ov').classList.remove('show');
+  quizPending=false;
+}
+
+// ─── HOME ────────────────────────────────────────────────────────────────
+function goHome(){
+  cur=null;heading=0;visited=[];visitedSet=new Set();
+  score=0;quizCorrect=0;questsDone=new Set();quizPending=false;activeFilter=null;searchQ='';
+  document.getElementById('start-ov').style.display='flex';
+  document.getElementById('h-loc').textContent='—';
+  document.getElementById('h-count').textContent='0 / 33 방문';
+  document.getElementById('vlist').innerHTML='<div style="font-size:9px;color:var(--dim)">아직 방문 기록 없음</div>';
+  document.getElementById('scene-img').src='';
+  ['si-name','si-sub','si-desc'].forEach(id=>document.getElementById(id).textContent='');
+  document.getElementById('signs-row').innerHTML='';
+  document.getElementById('minimap').src='about:blank';
+  document.getElementById('geo-wrap').style.display='none';
+  document.getElementById('inp-lat').value='';
+  document.getElementById('inp-lng').value='';
+  document.getElementById('f-signs').textContent='표지판 0개';
+  document.getElementById('loc-name').textContent='—';
+  document.getElementById('loc-coord').textContent='—';
+  document.getElementById('loc-tags').innerHTML='';
+  document.getElementById('score-disp').textContent='0';
+  document.getElementById('f-score').textContent='✦ 0 PT';
+  document.getElementById('search-inp').value='';
+  document.getElementById('search-count').textContent='33곳';
+  document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('on'));
+  document.getElementById('quiz-ov').classList.remove('show');
+  document.getElementById('qlist').innerHTML='';
+  document.getElementById('ach-ov').innerHTML='';
+}
+</script>
+</body>
+</html>

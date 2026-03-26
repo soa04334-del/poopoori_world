@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAME CENTER</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --win:#d4d0c8;--surface:#c8c4bc;
+  --bl:#ffffff;--bd:#404040;--bm:#808080;
+  --text:#000;--muted:#555;
+  --sel:#888;--sel-t:#fff;--btn:#d4d0c8;
+  --inset:#fff;
+  --green:#006600;--red:#cc0000;--title:#888;
+}
+html,body{width:100%;height:100vh;overflow:hidden;background:#909090;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text)}
+body{background-image:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(0,0,0,.04) 1px,rgba(0,0,0,.04) 2px),repeating-linear-gradient(90deg,transparent,transparent 1px,rgba(0,0,0,.04) 1px,rgba(0,0,0,.04) 2px);background-size:4px 4px}
+
+/* ── MENUBAR ── */
+.menubar{position:sticky;top:0;z-index:500;height:28px;background:var(--win);border-bottom:2px solid var(--bd);box-shadow:0 1px 0 var(--bl) inset;display:flex;align-items:center;padding:0 10px;gap:0}
+.mb-logo{font-size:15px;margin-right:14px;cursor:pointer;display:flex;align-items:center}
+.mb-nav{display:flex;height:100%}
+.mb-item{background:none;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;color:var(--text);padding:0 12px;cursor:pointer;height:100%;display:flex;align-items:center;white-space:nowrap;position:relative}
+.mb-item:hover,.mb-item.active{background:var(--sel);color:var(--sel-t)}
+.arrow{font-size:7px;margin-left:4px;opacity:.6}
+.dropdown{position:absolute;top:100%;left:0;z-index:600;background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);min-width:150px;display:none}
+.mb-item.open .dropdown{display:block}
+.dd-item{padding:6px 14px;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;gap:8px;white-space:nowrap;border-bottom:1px solid rgba(0,0,0,.06)}
+.dd-item:hover{background:var(--sel);color:var(--sel-t)}
+.dd-sep{height:1px;background:var(--bd);box-shadow:0 1px 0 var(--bl);margin:2px 0}
+.mb-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.mb-btn{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;padding:1px 10px;cursor:pointer}
+.mb-btn:active{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl)}
+.mb-btn.hi{background:var(--sel);color:#fff;border-color:var(--bd)}
+.mb-clock{font-size:10px;font-weight:700;padding-left:8px;border-left:1px solid var(--bm)}
+/* user chip */
+.user-chip{font-size:10px;font-weight:700;color:var(--green);padding:0 8px;border-left:1px solid var(--bm);cursor:pointer;white-space:nowrap;overflow:hidden;max-width:120px;text-overflow:ellipsis}
+
+/* ── DESKTOP ── */
+.desktop{padding:10px;min-height:calc(100vh - 28px);display:flex;justify-content:center;align-items:flex-start}
+.window{background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);width:100%;max-width:900px;min-height:calc(100vh - 48px);display:flex;flex-direction:column}
+.titlebar{background:var(--title);height:20px;display:flex;align-items:center;padding:0 5px;gap:4px;position:relative;flex-shrink:0}
+.tb-btn{width:12px;height:12px;flex-shrink:0;background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);cursor:pointer;font-size:7px;display:flex;align-items:center;justify-content:center}
+.tb-title{position:absolute;left:0;right:0;text-align:center;font-size:11px;font-weight:700;color:#fff;pointer-events:none;letter-spacing:1px}
+.tb-r{margin-left:auto;display:flex;gap:3px;z-index:1}
+.win-body{flex:1;min-height:0;display:flex;overflow:hidden}
+.sidebar{width:120px;flex-shrink:0;border-right:2px solid var(--bd);box-shadow:1px 0 0 var(--bl);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.sb-item{padding:5px 9px;cursor:pointer;font-size:10px;font-weight:700;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.sb-item:hover{background:rgba(0,0,0,.08)}
+.sb-item.active{background:var(--sel);color:var(--sel-t)}
+.sb-sep{height:1px;background:var(--bd);margin:2px 5px;box-shadow:0 1px 0 var(--bl);flex-shrink:0}
+.content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#f0ede8}
+.page{display:none;flex:1;min-height:0;flex-direction:column}.page.active{display:flex}
+
+/* ── HOME ── */
+.home-inner{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.rank-label{font-size:10px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.live-dot{width:6px;height:6px;background:var(--red);border-radius:50%;animation:blink .8s steps(1) infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.rank-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(2,1fr);gap:8px}
+.rank-card{cursor:pointer;border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);background:var(--win);display:flex;flex-direction:column;overflow:hidden;transition:filter .1s}
+.rank-card:hover{filter:brightness(.93)}
+.rank-card:active{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl)}
+.rc-thumb{flex:1;min-height:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,3.5vw,44px);position:relative;overflow:hidden;border-bottom:1px solid var(--bd)}
+.rc-num{position:absolute;top:4px;left:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,.55);color:#fff;padding:1px 5px}
+.rc-num.gold{background:rgba(160,120,0,.85)}.rc-num.silver{background:rgba(90,90,90,.8)}.rc-num.bronze{background:rgba(110,65,20,.8)}
+.rc-plays{position:absolute;bottom:4px;right:4px;font-size:8px;font-weight:700;background:rgba(0,0,0,.55);color:#fff;padding:1px 4px}
+.rc-info{padding:4px 6px;flex-shrink:0;background:var(--win)}
+.rc-cat{font-size:7px;color:var(--muted);letter-spacing:.5px}
+.rc-name{font-size:9px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-buy{color:var(--green);font-size:8px}.st-exp{color:var(--red);font-size:8px}
+.rc-expired{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.rc-expired-lbl{font-size:8px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:2px;border:1px solid rgba(255,255,255,.3);padding:2px 6px}
+.gcard-expired{opacity:.5;position:relative}
+.gcard-expired::after{content:'EXPIRED';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:rgba(0,0,0,.7);letter-spacing:2px;border:1px solid rgba(0,0,0,.3);padding:2px 8px;background:rgba(255,255,255,.6);pointer-events:none}
+
+/* ── CATEGORY ── */
+.cat-inner{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.cat-tabs{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
+.ctab{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;padding:2px 10px;cursor:pointer}
+.ctab:active,.ctab.active{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#bbb}
+.ctab.rnd{font-style:italic}
+.games-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));grid-auto-rows:max-content;gap:7px;overflow-y:auto}
+::-webkit-scrollbar{width:14px}::-webkit-scrollbar-track{background:var(--surface);border-left:1px solid var(--bd)}::-webkit-scrollbar-thumb{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd)}
+.gcard{border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);background:var(--win);cursor:pointer}
+.gcard:hover{background:#ccc}
+.gthumb{height:80px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;border-bottom:1px solid var(--bd)}
+.gbody{padding:6px 8px}
+.gcat{font-size:7px;color:var(--muted);margin-bottom:2px;letter-spacing:.5px}
+.gname{font-size:9px;font-weight:700;margin-bottom:3px;line-height:1.4}
+.gdesc{font-size:8px;color:var(--muted);line-height:1.6;margin-bottom:6px}
+.gfoot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bm);padding-top:5px}
+.gprice{font-size:9px;font-weight:700}
+.gplay{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);font-family:'Share Tech Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;cursor:pointer}
+
+/* ── GUIDE ── */
+.guide-inner{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:32px;padding:16px}
+.crt-win{border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);width:200px;flex-shrink:0}
+.crt-bar{background:var(--title);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;text-align:center;letter-spacing:1px}
+.crt-body{height:160px;background:#111;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.crt-body::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 3px);z-index:2;pointer-events:none}
+.dancer{font-size:50px;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:1;animation:dance .45s steps(2) infinite}
+@keyframes dance{0%{transform:translateX(-50%) scaleX(1) translateY(0)}50%{transform:translateX(-50%) scaleX(-1) translateY(-8px)}}
+.mnote{position:absolute;font-size:10px;z-index:1;color:#aaa;animation:mn 2s steps(4) infinite}
+.mnote:nth-child(2){top:16px;left:16px}.mnote:nth-child(3){top:16px;right:16px;animation-delay:.7s}
+@keyframes mn{0%{opacity:1;transform:translateY(0)}80%{opacity:0;transform:translateY(-12px)}100%{opacity:0}}
+.guide-msg{border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);max-width:300px}
+.msg-bar{background:var(--title);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;letter-spacing:1px}
+.msg-body{padding:10px 14px;font-size:13px;line-height:1.5}
+
+
+/* ── STATUSBAR ── */
+.statusbar{height:18px;flex-shrink:0;border-top:2px solid var(--bd);box-shadow:0 -1px 0 var(--bl);background:var(--win);display:flex;align-items:center;padding:0 8px;gap:12px;font-size:9px;color:var(--muted)}
+.ss{width:1px;height:11px;background:var(--bd);box-shadow:1px 0 0 var(--bl)}
+
+/* ── OVERLAY / DIALOG ── */
+.overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.28);align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.dialog{background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);width:min(92vw,520px)}
+.dialog-sm{width:min(92vw,360px)}
+.dlg-bar{background:var(--title);color:#fff;font-size:11px;font-weight:700;padding:3px 7px;display:flex;align-items:center;gap:5px;letter-spacing:.5px}
+.dlg-x{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);width:13px;height:13px;cursor:pointer;font-size:8px;display:flex;align-items:center;justify-content:center;color:#000;flex-shrink:0}
+.dlg-body{padding:12px 14px}
+.dlg-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.dlg-em{font-size:28px;flex-shrink:0}
+.dlg-name{font-size:11px;font-weight:700;margin-bottom:3px}
+.dlg-desc{font-size:9px;color:var(--muted);line-height:1.7}
+
+/* timer */
+.timer-box{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#fff;padding:6px 10px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.t-lbl{font-size:9px;color:var(--muted);min-width:64px}
+.t-num{font-size:14px;font-weight:700;color:var(--green);min-width:42px;letter-spacing:2px}
+.t-num.warn{color:#cc6600}.t-num.danger{color:var(--red)}
+.t-track{flex:1;height:6px;border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#fff}
+.t-fill{height:100%;background:var(--green);transition:width 1s linear,background .3s}
+.framebox{width:100%;height:260px;border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#e0e0d8;margin-bottom:10px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.framebox iframe{width:100%;height:100%;border:none}
+.frame-ph{text-align:center;color:var(--muted)}.frame-ph .fi{font-size:24px;margin-bottom:7px}.frame-ph p{font-size:8px;line-height:2}
+.exp-layer{display:none;position:absolute;inset:0;background:rgba(212,208,200,.96);z-index:5;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center}
+.exp-layer.show{display:flex}
+.exp-t{font-size:12px;font-weight:700}.exp-s{font-size:9px;color:var(--muted)}
+.dlg-btns{display:flex;gap:5px;justify-content:flex-end}
+.btn-d{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;padding:4px 16px;cursor:pointer;min-width:64px}
+.btn-d:active{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl)}
+.btn-d.pri{background:var(--sel);color:#fff;border-color:var(--bd)}
+.btn-d.pri:hover{background:#777}
+
+/* pay */
+.pay-item{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#fff;padding:9px 11px;display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.pi-name{font-size:10px;font-weight:700;margin-bottom:2px}.pi-price{font-size:14px;font-weight:700}.pi-sub{font-size:8px;color:var(--muted);margin-top:2px}
+.methods{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.method{border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:6px 11px;display:flex;align-items:center;gap:9px;font-size:10px;font-weight:700;cursor:pointer}
+.method:hover{background:#ccc}.method.sel{background:var(--sel);color:#fff}
+.micon{font-size:12px}.msub{font-size:8px;color:var(--muted);margin-top:2px;font-weight:400}.method.sel .msub{color:#ccc}
+.pay-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bd);padding-top:9px;margin-bottom:9px;font-size:10px;font-weight:700}
+.pay-total-v{font-size:16px;font-weight:700}
+.pay-note{font-size:8px;color:var(--muted);text-align:center;margin-top:7px;line-height:1.9}
+
+/* auth */
+.tab-row{display:flex;border-bottom:1px solid var(--bd);margin-bottom:10px}
+.titem{background:var(--surface);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:none;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:700;padding:3px 12px;cursor:pointer;color:var(--muted);margin-bottom:-1px}
+.titem.active{background:var(--win);color:var(--text);border-bottom:1px solid var(--win)}
+.sbtn{width:100%;padding:7px;margin-bottom:5px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:700;cursor:pointer;border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;gap:7px}
+.s-kk{background:#fee500;color:#000}.s-gg{background:#fff;color:#333}
+.divline{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:8px;margin:8px 0}
+.divline::before,.divline::after{content:'';flex:1;height:1px;background:var(--bd)}
+.field{margin-bottom:7px}
+.field label{display:block;font-size:8px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.field input{width:100%;border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#fff;font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 8px;outline:none}
+.auth-err{font-size:9px;color:var(--red);margin-bottom:6px;display:none}
+
+/* upload */
+.upload-dialog{width:min(92vw,420px)}
+.drop-area{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#fff;padding:22px;text-align:center;cursor:pointer;margin-bottom:8px}
+.drop-area:hover{background:#f0f0e8}
+.dicon{font-size:20px;margin-bottom:7px}
+.drop-area p{font-size:8px;color:var(--muted);line-height:2}
+.drop-area strong{text-decoration:underline}
+.file-ok{border:1px solid var(--green);padding:5px 8px;font-size:8px;color:var(--green);margin-bottom:7px;display:none;background:#f0fff4}
+.fselect{width:100%;border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl);background:#fff;font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 8px;outline:none;cursor:pointer}
+
+/* toast */
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);font-size:10px;font-weight:700;padding:6px 14px;z-index:9000;transition:transform .2s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{color:var(--green)}.toast.err{color:var(--red)}.toast.info{color:#444}
+
+/* fab */
+.fab{position:fixed;bottom:16px;right:16px;z-index:50;background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer}
+
+/* trial popup */
+.trial-pop{display:none;position:fixed;z-index:9500;top:50%;left:50%;transform:translate(-50%,-52%) scale(.92);opacity:0;transition:opacity .15s,transform .15s}
+.trial-pop.show{display:block;opacity:1;transform:translate(-50%,-50%) scale(1)}
+.trial-win{background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);min-width:210px}
+.trial-bar{background:var(--title);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;letter-spacing:1px}
+.trial-body{padding:16px 20px;text-align:center}
+.trial-icon{font-size:24px;margin-bottom:9px}
+.trial-label{font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:5px}
+.trial-sub{font-size:9px;color:var(--muted);margin-bottom:14px;line-height:1.9}
+.trial-ok{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;padding:4px 24px;cursor:pointer}
+
+/* loading overlay */
+.loading-ov{display:none;position:fixed;inset:0;z-index:9800;background:rgba(212,208,200,.7);align-items:center;justify-content:center}
+.loading-ov.show{display:flex}
+.loading-box{background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);padding:16px 24px;font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+
+<nav>
+  <!-- MENUBAR -->
+  <div class="menubar">
+    <span class="mb-logo" onclick="goto('home')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" style="image-rendering:pixelated;display:block">
+        <rect x="7" y="0" width="2" height="1" fill="#222"/>
+        <rect x="6" y="1" width="4" height="1" fill="#222"/>
+        <rect x="5" y="2" width="6" height="1" fill="#222"/>
+        <rect x="4" y="3" width="8" height="1" fill="#222"/>
+        <rect x="3" y="4" width="10" height="1" fill="#222"/>
+        <rect x="2" y="5" width="12" height="1" fill="#222"/>
+        <rect x="1" y="6" width="14" height="1" fill="#222"/>
+        <rect x="0" y="7" width="16" height="1" fill="#222"/>
+      </svg>
+    </span>
+    <div class="mb-nav">
+      <button class="mb-item active" id="mb-home" onclick="goto('home',this)">HOME</button>
+      <div class="mb-item" id="mb-cat" tabindex="0" onclick="toggleCat(this)">
+        CATEGORY <span class="arrow">▼</span>
+        <div class="dropdown">
+          <div class="dd-item" onclick="gotocat('all',event)">+ All Games</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item" onclick="gotocat('racing',event)">+ Racing</div>
+          <div class="dd-item" onclick="gotocat('healing',event)">+ Healing</div>
+          <div class="dd-item" onclick="gotocat('fight',event)">+ Fight</div>
+          <div class="dd-item" onclick="gotocat('rpg',event)">+ RPG</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item" onclick="goRandom(event)">+ Random!</div>
+        </div>
+      </div>
+      <button class="mb-item" id="mb-guide" onclick="goto('guide',this)">GUIDE</button>
+    </div>
+    <div class="mb-right">
+      <span class="user-chip" id="user-chip" style="display:none" onclick="openAuth()"></span>
+      <button class="mb-btn" id="btn-login" onclick="openAuth()">Login</button>
+      <button class="mb-btn hi" id="btn-join" onclick="openAuthJoin()">Join</button>
+      <button class="mb-btn" id="btn-logout" style="display:none" onclick="doLogout()">Logout</button>
+      <span class="mb-clock" id="clock">--:--</span>
+    </div>
+  </div>
+</nav>
+
+<!-- DESKTOP -->
+<div class="desktop">
+<div class="window">
+  <div class="titlebar">
+    <div class="tb-btn" onclick="goto('home')">×</div>
+    <div class="tb-title">GAME CENTER</div>
+    <div class="tb-r"><div class="tb-btn">–</div><div class="tb-btn">□</div></div>
+  </div>
+
+  <div class="win-body">
+    <div class="sidebar">
+      <div class="sb-item active" id="sb-home" onclick="goto('home',null,'home')"><span>+</span>Home</div>
+      <div class="sb-sep"></div>
+      <div class="sb-item" id="sb-all" onclick="gotocat('all')"><span>+</span>All</div>
+      <div class="sb-item" id="sb-racing" onclick="gotocat('racing')"><span>+</span>Racing</div>
+      <div class="sb-item" id="sb-healing" onclick="gotocat('healing')"><span>+</span>Healing</div>
+      <div class="sb-item" id="sb-fight" onclick="gotocat('fight')"><span>+</span>Fight</div>
+      <div class="sb-item" id="sb-rpg" onclick="gotocat('rpg')"><span>+</span>RPG</div>
+      <div class="sb-item" onclick="goRandom()"><span>+</span>Random</div>
+      <div class="sb-sep"></div>
+      <div class="sb-item" id="sb-guide" onclick="goto('guide',null,'guide')"><span>+</span>Guide</div>
+    </div>
+
+    <div class="content">
+      <!-- HOME -->
+      <div class="page active" id="page-home">
+        <div class="home-inner">
+          <div class="rank-label"><div class="live-dot"></div>LIVE RANKING</div>
+          <div class="rank-grid" id="rank-grid"></div>
+        </div>
+      </div>
+
+      <!-- CATEGORY -->
+      <div class="page" id="page-cat">
+        <div class="cat-inner">
+          <div class="cat-tabs">
+            <button class="ctab active" onclick="filterG('all',this)">All</button>
+            <button class="ctab" onclick="filterG('racing',this)">+ Racing</button>
+            <button class="ctab" onclick="filterG('healing',this)">+ Healing</button>
+            <button class="ctab" onclick="filterG('fight',this)">+ Fight</button>
+            <button class="ctab" onclick="filterG('rpg',this)">+ RPG</button>
+            <button class="ctab rnd" onclick="goRandom()">+ Random</button>
+          </div>
+          <div class="games-grid" id="games-grid"></div>
+        </div>
+      </div>
+
+      <!-- GUIDE -->
+      <div class="page" id="page-guide">
+        <div class="guide-inner">
+          <div class="crt-win">
+            <div class="crt-bar">PLAYER_001.EXE</div>
+            <div class="crt-body">
+              <span class="mnote">*</span><span class="mnote">~</span>
+              <div class="dancer" style="font-size:36px;color:#aaa">[ @ ]</div>
+            </div>
+          </div>
+          <div class="guide-msg">
+            <div class="msg-bar">guide.txt</div>
+            <div class="msg-body">공략 없는 힐링게임월드<br>푸푸리월드</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span id="status-text">Loading...</span>
+    <div class="ss"></div>
+    <span>Free trial: 3 min</span>
+    <div class="ss"></div>
+    <span id="auth-status">로그인 필요</span>
+  </div>
+</div>
+</div>
+
+<!-- GAME DIALOG -->
+<div class="overlay" id="game-ov">
+  <div class="dialog">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closeGame()">×</div><span id="gm-title">Game</span></div>
+    <div class="dlg-body">
+      <div class="dlg-row">
+        <div class="dlg-em" id="gm-em">[ ]</div>
+        <div><div class="dlg-name" id="gm-name"></div><div class="dlg-desc" id="gm-desc"></div></div>
+      </div>
+      <div class="timer-box" id="timer-box">
+        <span class="t-lbl">FREE TIME</span>
+        <span class="t-num" id="t-num">3:00</span>
+        <div class="t-track"><div class="t-fill" id="t-fill"></div></div>
+      </div>
+      <div class="framebox">
+        <div class="frame-ph"><div class="fi">[ ]</div><p>Game runs here<br><span style="font-size:8px">iframe / HTML file</span></p></div>
+        <iframe id="game-iframe" style="display:none" sandbox="allow-scripts allow-same-origin"></iframe>
+        <div class="exp-layer" id="exp-layer">
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--muted)">[ TIME ]</div>
+          <div class="exp-t">Free trial ended</div>
+          <div class="exp-s">Purchase to continue</div>
+          <button class="btn-d pri" style="margin-top:6px" onclick="openPay(curG)">Purchase -500W</button>
+        </div>
+      </div>
+      <div class="dlg-btns" id="gm-btns">
+        <button class="btn-d" onclick="closeGame()">Close</button>
+        <button class="btn-d pri" onclick="openPay(curG)">[ BUY ] -500W</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAY DIALOG -->
+<div class="overlay" id="pay-ov">
+  <div class="dialog dialog-sm">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closePay()">×</div><span>Purchase Game</span></div>
+    <div class="dlg-body">
+      <div class="pay-item">
+        <div style="font-size:24px" id="pay-em">[ ]</div>
+        <div><div class="pi-name" id="pay-name">—</div><div class="pi-price">-500W</div><div class="pi-sub">Unlimited play</div></div>
+      </div>
+      <div class="methods">
+        <div class="method sel" onclick="selM(this,'toss')"><span class="micon">--</span><div><div>Toss Pay</div><div class="msub">토스 앱 간편결제</div></div></div>
+        <div class="method" onclick="selM(this,'card')"><span class="micon">[]</span><div><div>Card</div><div class="msub">신용 / 체크카드</div></div></div>
+        <div class="method" onclick="selM(this,'kakao')"><span class="micon">--</span><div><div>Kakao Pay</div><div class="msub">카카오 간편결제</div></div></div>
+      </div>
+      <div class="pay-total"><span>Total</span><span class="pay-total-v">-500W</span></div>
+      <div class="dlg-btns"><button class="btn-d" onclick="closePay()">Cancel</button><button class="btn-d pri" onclick="doPay()">Confirm</button></div>
+      <div class="pay-note">결제 후 환불 불가 · 토스페이먼츠<br><span style="color:var(--red)">DEMO — 실제 결제 없음</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH DIALOG -->
+<div class="overlay" id="auth-ov">
+  <div class="dialog dialog-sm">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closeAuth()">×</div><span id="auth-dlg-title">Sign In</span></div>
+    <div class="dlg-body">
+      <div class="tab-row">
+        <button class="titem active" id="tab-login" onclick="authTab('in',this)">Login</button>
+        <button class="titem" id="tab-join" onclick="authTab('up',this)">Join</button>
+      </div>
+      <!-- 소셜 로그인 (준비 중) -->
+      <div style="font-size:8px;color:var(--muted);text-align:center;padding:6px 0;border:1px dashed var(--bm);margin-bottom:8px">
+        소셜 로그인 준비 중 · 이메일로 가입해주세요
+      </div>
+      <!-- 이메일 -->
+      <div class="auth-err" id="auth-err"></div>
+      <div id="nick-field" style="display:none">
+        <div class="field"><label>NICKNAME</label><input type="text" id="inp-nick" placeholder="닉네임"></div>
+      </div>
+      <div class="field"><label>EMAIL</label><input type="email" id="inp-email" placeholder="user@example.com"></div>
+      <div class="field"><label>PASSWORD</label><input type="password" id="inp-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitAuth()"></div>
+      <div class="dlg-btns" style="margin-top:8px">
+        <button class="btn-d" onclick="closeAuth()">Cancel</button>
+        <button class="btn-d pri" id="auth-submit" onclick="submitAuth()">Login</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD DIALOG -->
+<div class="overlay" id="up-ov">
+  <div class="dialog upload-dialog">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closeUp()">×</div><span>Upload Game</span></div>
+    <div class="dlg-body">
+      <div class="tab-row" style="margin-bottom:10px">
+        <button class="titem active" onclick="upTab('file',this)">HTML File</button>
+        <button class="titem" onclick="upTab('url',this)">URL / iframe</button>
+      </div>
+      <div id="up-file">
+        <div class="drop-area" id="dzone" onclick="document.getElementById('finput').click()">
+          <div class="dicon" style="font-size:14px;letter-spacing:2px">[ + ]</div>
+          <p><strong>Click or drag to upload</strong><br>HTML only · max 20MB</p>
+          <input type="file" id="finput" accept=".html" style="display:none" onchange="pickFile(this)">
+        </div>
+        <div class="file-ok" id="file-ok"></div>
+      </div>
+      <div id="up-url" style="display:none">
+        <div class="field"><label>GAME URL</label><input type="url" placeholder="https://example.com/game" id="g-url"></div>
+      </div>
+      <div class="field"><label>GAME NAME</label><input type="text" placeholder="게임 이름" id="g-name"></div>
+      <div class="field"><label>DESCRIPTION</label><input type="text" placeholder="한줄 설명..." id="g-desc"></div>
+      <div class="field">
+        <label>THUMBNAIL IMAGE (선택)</label>
+        <div class="drop-area" id="thumb-zone" style="padding:14px" onclick="document.getElementById('thumb-input').click()">
+          <div id="thumb-preview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;margin-bottom:6px;border:1px solid var(--bd)"></div>
+          <div class="dicon" style="font-size:12px;letter-spacing:2px" id="thumb-icon">[ IMG ]</div>
+          <p style="font-size:8px">JPG / PNG / GIF · 최대 2MB</p>
+          <input type="file" id="thumb-input" accept="image/*" style="display:none" onchange="pickThumb(this)">
+        </div>
+      </div>
+      <div class="field">
+        <label>CATEGORY</label>
+        <select class="fselect" id="g-cat">
+          <option value="racing">+ Racing</option>
+          <option value="healing">+ Healing</option>
+          <option value="fight">+ Fight</option>
+          <option value="rpg">+ RPG</option>
+        </select>
+      </div>
+      <div class="dlg-btns" style="margin-top:10px">
+        <button class="btn-d" onclick="closeUp()">Cancel</button>
+        <button class="btn-d pri" onclick="doUpload()">Upload</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL VERIFY POPUP -->
+<div class="overlay" id="verify-ov">
+  <div class="dialog dialog-sm">
+    <div class="dlg-bar">
+      <div class="dlg-x" onclick="closeVerify()">×</div>
+      <span>이메일 인증 필요</span>
+    </div>
+    <div class="dlg-body" style="text-align:center;padding:20px 18px">
+      <div style="font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px;color:var(--muted)">[ MAIL ]</div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:8px">인증 메일을 발송했습니다</div>
+      <div style="font-size:9px;color:var(--muted);line-height:2;margin-bottom:6px">
+        <span id="verify-email" style="color:var(--text);font-weight:700"></span>
+      </div>
+      <div style="font-size:9px;color:var(--muted);line-height:2;margin-bottom:16px;border:1px solid var(--bm);padding:8px 10px;background:#fff;text-align:left">
+        1. 입력하신 이메일 받은편지함을 확인해주세요<br>
+        2. <span style="font-weight:700">Confirm your email</span> 메일을 열어주세요<br>
+        3. <span style="font-weight:700">Confirm your email address</span> 버튼을 클릭해주세요<br>
+        4. 인증 완료 후 로그인해주세요
+      </div>
+      <div style="font-size:8px;color:var(--muted);margin-bottom:14px">
+        메일이 안 보이면 스팸함을 확인해주세요
+      </div>
+      <div class="dlg-btns" style="justify-content:center;gap:8px">
+        <button class="btn-d" onclick="closeVerify()">닫기</button>
+        <button class="btn-d pri" onclick="closeVerify();openAuth()">로그인하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT GAME DIALOG -->
+<div class="overlay" id="edit-ov">
+  <div class="dialog upload-dialog">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closeEdit()">×</div><span>Edit Game</span></div>
+    <div class="dlg-body">
+      <input type="hidden" id="edit-game-id">
+      <div class="tab-row" style="margin-bottom:10px">
+        <button class="titem active" onclick="editTab('info',this)">INFO</button>
+        <button class="titem" onclick="editTab('file',this)">FILE</button>
+      </div>
+      <!-- INFO TAB -->
+      <div id="edit-info">
+        <div class="field"><label>GAME NAME</label><input type="text" id="edit-title" placeholder="게임 이름"></div>
+        <div class="field"><label>DESCRIPTION</label><input type="text" id="edit-desc" placeholder="한줄 설명"></div>
+        <div class="field">
+          <label>CATEGORY</label>
+          <select class="fselect" id="edit-cat">
+            <option value="racing">+ Racing</option>
+            <option value="healing">+ Healing</option>
+            <option value="fight">+ Fight</option>
+            <option value="rpg">+ RPG</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>THUMBNAIL (선택)</label>
+          <div class="drop-area" id="edit-thumb-zone" style="padding:14px" onclick="document.getElementById('edit-thumb-input').click()">
+            <div id="edit-thumb-preview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;margin-bottom:6px;border:1px solid var(--bd)"></div>
+            <div class="dicon" style="font-size:12px;letter-spacing:2px" id="edit-thumb-icon">[ IMG ]</div>
+            <p style="font-size:8px">JPG / PNG · 최대 2MB · 교체 시 업로드</p>
+            <input type="file" id="edit-thumb-input" accept="image/*" style="display:none" onchange="pickEditThumb(this)">
+          </div>
+        </div>
+      </div>
+      <!-- FILE TAB -->
+      <div id="edit-file" style="display:none">
+        <div class="field"><label>NEW URL (선택)</label><input type="url" id="edit-url" placeholder="https://example.com/game"></div>
+        <div class="drop-area" id="edit-dzone" onclick="document.getElementById('edit-finput').click()">
+          <div class="dicon" style="font-size:14px;letter-spacing:2px">[ + ]</div>
+          <p><strong>새 HTML 파일로 교체</strong><br>기존 파일을 덮어씁니다</p>
+          <input type="file" id="edit-finput" accept=".html" style="display:none" onchange="pickEditFile(this)">
+        </div>
+        <div class="file-ok" id="edit-file-ok"></div>
+      </div>
+      <!-- DELETE -->
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bm)">
+        <button class="btn-d" style="color:var(--red);border-color:var(--red);width:100%" onclick="confirmDelete()">[ DELETE GAME ]</button>
+      </div>
+      <div class="dlg-btns" style="margin-top:10px">
+        <button class="btn-d" onclick="closeEdit()">Cancel</button>
+        <button class="btn-d pri" onclick="doEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="overlay" id="del-ov">
+  <div class="dialog dialog-sm">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closeDel()">×</div><span>Delete Game</span></div>
+    <div class="dlg-body" style="text-align:center;padding:20px">
+      <div style="font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:10px;color:var(--muted)">[ ! ]</div>
+      <div style="font-size:10px;font-weight:700;margin-bottom:6px" id="del-title"></div>
+      <div style="font-size:9px;color:var(--muted);margin-bottom:16px;line-height:1.8">이 게임을 삭제하면 복구할 수 없습니다.<br>구매 기록도 함께 삭제됩니다.</div>
+      <div class="dlg-btns" style="justify-content:center">
+        <button class="btn-d" onclick="closeDel()">Cancel</button>
+        <button class="btn-d" style="color:var(--red);border-color:var(--red)" onclick="doDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PURCHASE CONFIRM POPUP -->
+<div class="overlay" id="purchase-confirm-ov">
+  <div class="dialog dialog-sm">
+    <div class="dlg-bar"><div class="dlg-x" onclick="closePurchaseConfirm()">×</div><span>Purchase</span></div>
+    <div class="dlg-body" style="text-align:center;padding:20px 18px">
+      <div style="font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:6px;color:var(--muted)">[ ? ]</div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:6px" id="pc-game-name"></div>
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px">이 게임의 무료 체험이 만료되었습니다.</div>
+      <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:18px">계속 플레이하려면 구매하세요.</div>
+      <div style="border:1px solid var(--bm);padding:10px;margin-bottom:18px;background:#fff">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:4px">결제 금액</div>
+        <div style="font-size:20px;font-weight:700" id="pc-price">-500W</div>
+        <div style="font-size:8px;color:var(--muted);margin-top:2px">무제한 플레이</div>
+      </div>
+      <div class="dlg-btns" style="justify-content:center;gap:10px">
+        <button class="btn-d" style="min-width:80px" onclick="closePurchaseConfirm()">[ NO ]</button>
+        <button class="btn-d pri" style="min-width:80px" onclick="goToPurchase()">[ YES ]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRIAL POPUP -->
+<div class="trial-pop" id="trial-pop">
+  <div class="trial-win">
+    <div class="trial-bar">Game Center</div>
+    <div class="trial-body">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--muted);margin-bottom:9px">[ TIMER ]</div>
+      <div class="trial-label">FREE TRIAL : 3 MIN</div>
+      <div class="trial-sub">3분 무료 체험이 시작됩니다.<br>이후 ₩500에 구매하세요.</div>
+      <button class="trial-ok" onclick="dismissTrial()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-ov" id="loading-ov">
+  <div class="loading-box" id="loading-msg">Loading...</div>
+</div>
+
+<button class="fab" onclick="openUp()">+ UPLOAD GAME</button>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE INIT ──
+const { createClient } = supabase;
+const sb = createClient(
+  'https://akkrvgklzsbiocusrfja.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFra3J2Z2tsenNiaW9jdXNyZmphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NzAxOTEsImV4cCI6MjA5MDA0NjE5MX0.mNQXBh3QX2l1YoGHxUFWjnuNRWYSR9c63Xq9Wz7poUI'
+);
+
+// ── STATE ──
+let curG = null, tmr = null, tsec = 180, pm = 'toss';
+let currentUser = null;
+let G = []; // 게임 목록 (Supabase에서 로드)
+const CL = {racing:'RACING',healing:'HEALING',fight:'FIGHT',rpg:'RPG'};
+const EM = {racing:'[R]',healing:'[H]',fight:'[F]',rpg:'[P]'};
+
+// ── CLOCK ──
+(function tick(){
+  const n = new Date();
+  document.getElementById('clock').textContent = n.getHours()+':'+(n.getMinutes()+'').padStart(2,'0');
+  setTimeout(tick,30000);
+})();
+
+// ── NAV ──
+document.addEventListener('click',e=>{if(!e.target.closest('#mb-cat'))document.getElementById('mb-cat').classList.remove('open')});
+function toggleCat(el){el.classList.toggle('open')}
+
+function goto(id,btn,sbId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.mb-item').forEach(b=>b.classList.remove('active'));
+  const map={home:'mb-home',cat:'mb-cat',guide:'mb-guide'};
+  document.getElementById(map[id])?.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sb-'+(sbId||id))?.classList.add('active');
+  document.getElementById('status-text').textContent = id==='home'? G.length+' games' : id==='cat'? 'games' : '1 item';
+}
+
+function gotocat(cat,e){
+  if(e){e.stopPropagation();document.getElementById('mb-cat').classList.remove('open')}
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-cat').classList.add('active');
+  document.querySelectorAll('.mb-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mb-cat').classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sb-'+(cat==='all'?'all':cat))?.classList.add('active');
+  filterG(cat,null);
+  document.querySelectorAll('.ctab:not(.rnd)').forEach(b=>b.classList.remove('active'));
+  const idx=['all','racing','healing','fight','rpg'].indexOf(cat);
+  document.querySelectorAll('.ctab:not(.rnd)')[idx]?.classList.add('active');
+}
+
+function goRandom(e){
+  if(e)e.stopPropagation();
+  document.getElementById('mb-cat').classList.remove('open');
+  if(!G.length)return;
+  const g=G[Math.floor(Math.random()*G.length)];
+  gotocat(g.category);
+  setTimeout(()=>openGame(g),60);
+}
+
+// ── RENDER ──
+function renderRank(){
+  const s=[...G].sort((a,b)=>b.plays-a.plays).slice(0,10);
+  const nc=i=>i===0?'gold':i===1?'silver':i===2?'bronze':'';
+  document.getElementById('rank-grid').innerHTML=s.map((g,i)=>`
+    <div class="rank-card" onclick='openGame(${JSON.stringify(g)})'>
+      <div class="rc-thumb" style="${g.thumbnail_url?'background:url('+g.thumbnail_url+') center/cover no-repeat':''}">
+        ${g.thumbnail_url?'':'<span>'+( EM[g.category]||'[ ]')+'</span>'}
+        <div class="rc-num ${nc(i)}">${i+1}</div>
+        <div class="rc-plays">▶${(g.plays||0).toLocaleString()}</div>
+        ${isExpiredGame(g.id)?'<div class="rc-expired"><div class="rc-expired-lbl">EXPIRED</div></div>':''}
+      </div>
+      <div class="rc-info">
+        <div class="rc-cat">${CL[g.category]||g.category}</div>
+        <div class="rc-name">${g.title}</div>
+        ${currentUser&&g.uploader_id===currentUser.id?`<div style="font-size:7px;color:var(--muted);cursor:pointer;margin-top:2px" onclick="event.stopPropagation();openEdit(${JSON.stringify(g).replace(/'/g,'&#39;')})">[edit]</div>`:''}
+      </div>
+    </div>`).join('');
+  document.getElementById('status-text').textContent = G.length+' games';
+}
+
+function renderGrid(f){
+  const list=f==='all'?G:G.filter(g=>g.category===f);
+  document.getElementById('games-grid').innerHTML=list.map(g=>`
+    <div class="gcard ${isExpiredGame(g.id)?'gcard-expired':''}" onclick='openGame(${JSON.stringify(g)})'>
+      <div class="gthumb" style="${g.thumbnail_url?'background:url('+g.thumbnail_url+') center/cover no-repeat;':''}">${g.thumbnail_url?'':(EM[g.category]||'[ ]')}</div>
+      <div class="gbody">
+        <div class="gcat">${CL[g.category]||g.category}</div>
+        <div class="gname">${g.title}</div>
+        <div class="gdesc">${g.description||''}</div>
+        <div class="gfoot">
+          <div class="gprice">-${(g.price||500).toLocaleString()}W</div>
+          <button class="gplay">▶ Play</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterG(cat,btn){
+  if(btn){document.querySelectorAll('.ctab:not(.rnd)').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+  renderGrid(cat);
+}
+
+// ── LOAD GAMES ──
+async function loadGames(){
+  const {data,error} = await sb.from('games').select('*').order('plays',{ascending:false});
+  if(error){toast('게임 로드 실패','err');return;}
+  G = data || [];
+  if(G.length===0) await seedDemoGames();
+  await loadUserGameStatus();
+  renderRank();
+  renderGrid('all');
+}
+
+async function loadUserGameStatus(){
+  if(!currentUser) return;
+  const {data} = await sb.from('play_history')
+    .select('game_id,status')
+    .eq('user_id', currentUser.id);
+  if(!data) return;
+  // expired 상태를 isExpiredGame이 참조할 수 있도록 메모리에 캐시
+  window._gameStatus = {};
+  data.forEach(r => { window._gameStatus[r.game_id] = r.status; });
+}
+
+async function seedDemoGames(){
+  const demos=[
+    {title:'감자 달리기',description:'감자가 달린다. 그게 다야.',category:'racing',price:500,plays:28410},
+    {title:'꽃 힐링',description:'꽃을 클릭하면 꽃이 사라진다.',category:'healing',price:500,plays:21330},
+    {title:'주먹 대결',description:'주먹 두 개가 싸운다.',category:'fight',price:500,plays:19820},
+    {title:'용사의 여정',description:'용사가 있다. 뭘 해야 할지 모른다.',category:'rpg',price:500,plays:17650},
+    {title:'고양이 드리프트',description:'고양이가 운전한다.',category:'racing',price:500,plays:15500},
+    {title:'달팽이 RPG',description:'달팽이 용사가 세계를 구한다. 느리게.',category:'rpg',price:500,plays:14200},
+    {title:'명상 클릭커',description:'클릭하면 명상이 끊긴다.',category:'healing',price:500,plays:12800},
+    {title:'계란 배틀',description:'계란 두 개가 서로를 노려본다.',category:'fight',price:500,plays:11400},
+    {title:'버스 레이서',description:'버스가 F1 트랙을 달린다.',category:'racing',price:500,plays:10300},
+    {title:'화분 키우기',description:'물을 줘도 죽고 안 줘도 죽는다.',category:'healing',price:500,plays:9100},
+  ];
+  const {data} = await sb.from('games').insert(demos).select();
+  G = data || [];
+}
+
+// ── GAME OPEN ──
+async function openGame(g){
+  if(typeof g === 'string') g = JSON.parse(g);
+  curG = g;
+  document.getElementById('gm-title').textContent = g.title;
+  document.getElementById('gm-em').textContent = EM[g.category]||'[ ]';
+  document.getElementById('gm-name').textContent = g.title;
+  document.getElementById('gm-desc').textContent = g.description||'';
+  document.getElementById('game-ov').classList.add('open');
+
+  // 구매/만료 상태 확인
+  let status = null;
+  if(currentUser){
+    const {data} = await sb.from('play_history')
+      .select('status')
+      .eq('user_id', currentUser.id)
+      .eq('game_id', g.id)
+      .single();
+    status = data?.status || null;
+
+    // 구매 내역 확인
+    const {data:pur} = await sb.from('purchases')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .eq('game_id', g.id)
+      .single();
+    if(pur) status = 'purchased';
+  } else {
+    // 비로그인: localStorage 폴백
+    const h = JSON.parse(localStorage.getItem('dh')||'{}');
+    status = h[g.id] || null;
+  }
+
+  const isPurchased = status === 'purchased';
+  const isExpired   = status === 'expired';
+
+  document.getElementById('exp-layer').classList.toggle('show', isExpired && !isPurchased);
+  document.getElementById('timer-box').style.display = isPurchased ? 'none' : 'flex';
+  document.getElementById('gm-btns').innerHTML = isPurchased
+    ? `<span style="font-size:10px;color:var(--green);font-weight:700">OK -- Owned -- Unlimited play</span><button class="btn-d" onclick="closeGame()">Close</button>`
+    : `<button class="btn-d" onclick="closeGame()">Close</button><button class="btn-d pri" onclick="openPay(curG)">[ BUY ] -500W</button>`;
+
+  if(!isPurchased && !isExpired){
+    document.getElementById('trial-pop').classList.add('show');
+  }
+  if(isExpired && !isPurchased){
+    // 게임 다이얼로그 닫고 결제 확인 팝업
+    document.getElementById('game-ov').classList.remove('open');
+    stopT();
+    openPurchaseConfirm(g);
+  }
+
+  // 플레이 수 증가
+  await sb.from('games').update({plays:(g.plays||0)+1}).eq('id',g.id);
+  g.plays = (g.plays||0)+1;
+  renderRank();
+}
+
+function closeGame(){
+  document.getElementById('game-ov').classList.remove('open');
+  stopT();
+  document.getElementById('exp-layer').classList.remove('show');
+}
+
+// ── TRIAL ──
+async function dismissTrial(){
+  document.getElementById('trial-pop').classList.remove('show');
+  if(!curG) return;
+
+  if(currentUser){
+    // 서버에 playing 상태 기록 (upsert)
+    await sb.from('play_history').upsert({
+      user_id: currentUser.id,
+      game_id: curG.id,
+      status: 'playing',
+      started_at: new Date().toISOString()
+    }, {onConflict:'user_id,game_id'});
+  }
+  startT(curG.id);
+}
+
+// ── TIMER ──
+function startT(gameId){
+  stopT(); tsec=180; updT();
+  tmr = setInterval(async()=>{
+    tsec--; updT();
+    if(tsec<=0){
+      stopT();
+      // 만료 처리
+      if(currentUser){
+        await sb.from('play_history').upsert({
+          user_id: currentUser.id,
+          game_id: gameId,
+          status: 'expired'
+        },{onConflict:'user_id,game_id'});
+      } else {
+        const h = JSON.parse(localStorage.getItem('dh')||'{}');
+        h[gameId]='expired'; localStorage.setItem('dh',JSON.stringify(h));
+      }
+      document.getElementById('exp-layer').classList.add('show');
+    }
+  },1000);
+}
+function stopT(){if(tmr){clearInterval(tmr);tmr=null;}}
+function updT(){
+  const m=Math.floor(tsec/60),s=(tsec%60+'').padStart(2,'0');
+  const el=document.getElementById('t-num');
+  el.textContent=m+':'+s;
+  el.className='t-num'+(tsec<=30?' danger':tsec<=60?' warn':'');
+  const f=document.getElementById('t-fill');
+  f.style.width=(tsec/180*100)+'%';
+  f.style.background=tsec<=30?'var(--red)':tsec<=60?'#cc6600':'var(--green)';
+}
+
+// ── PAYMENT ──
+function openPay(g){
+  if(!g)return;
+  if(!currentUser){toast('로그인 후 구매 가능합니다','err');openAuth();return;}
+  closeGame();
+  document.getElementById('pay-em').textContent=EM[g.category]||'[ ]';
+  document.getElementById('pay-name').textContent=g.title;
+  document.getElementById('pay-ov').classList.add('open');
+}
+function closePay(){document.getElementById('pay-ov').classList.remove('open')}
+function selM(el,m){document.querySelectorAll('.method').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');pm=m;}
+
+async function doPay(){
+  if(!curG||!currentUser)return;
+  showLoading('결제 처리 중...');
+  // 토스페이먼츠 실제 연동 포인트
+  // 데모: 바로 구매 완료 처리
+  const {error} = await sb.from('purchases').upsert({
+    user_id: currentUser.id,
+    game_id: curG.id,
+    amount: curG.price||500,
+    payment_key: 'DEMO_'+Date.now()
+  },{onConflict:'user_id,game_id'});
+
+  // play_history도 purchased로 업데이트
+  await sb.from('play_history').upsert({
+    user_id: currentUser.id,
+    game_id: curG.id,
+    status: 'purchased'
+  },{onConflict:'user_id,game_id'});
+
+  hideLoading();
+  if(error){toast('결제 실패','err');return;}
+  closePay();
+  toast(curG.title+' 구매 완료!','ok');
+}
+
+// ── AUTH ──
+function closeVerify(){document.getElementById("verify-ov").classList.remove("open")}
+function openAuth(){document.getElementById('auth-ov').classList.add('open');authTab('in',document.getElementById('tab-login'));}
+function openAuthJoin(){document.getElementById('auth-ov').classList.add('open');authTab('up',document.getElementById('tab-join'));}
+function closeAuth(){document.getElementById('auth-ov').classList.remove('open');document.getElementById('auth-err').style.display='none';}
+
+function authTab(t,btn){
+  document.querySelectorAll('#auth-ov .titem').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('nick-field').style.display=t==='up'?'block':'none';
+  document.getElementById('auth-submit').textContent=t==='up'?'Join':'Login';
+  document.getElementById('auth-dlg-title').textContent=t==='up'?'Join':'Sign In';
+  document.getElementById('auth-err').style.display='none';
+  window._authMode = t;
+}
+
+async function sLogin(provider){
+  showLoading(provider==='kakao'?'카카오 로그인 중...':'Google 로그인 중...');
+  const {error} = await sb.auth.signInWithOAuth({
+    provider: provider==='kakao'?'kakao':'google',
+    options:{redirectTo: window.location.href}
+  });
+  hideLoading();
+  if(error){toast('로그인 실패: '+error.message,'err');}
+}
+
+async function submitAuth(){
+  const email = document.getElementById('inp-email').value.trim();
+  const pw    = document.getElementById('inp-pw').value;
+  const nick  = document.getElementById('inp-nick').value.trim();
+  const errEl = document.getElementById('auth-err');
+  errEl.style.display='none';
+
+  if(!email||!pw){errEl.textContent='이메일과 비밀번호를 입력해주세요.';errEl.style.display='block';return;}
+
+  showLoading(window._authMode==='up'?'가입 중...':'로그인 중...');
+
+  let error;
+  if(window._authMode==='up'){
+    const res = await sb.auth.signUp({
+      email, password:pw,
+      options:{data:{nickname:nick||email.split('@')[0]}}
+    });
+    error = res.error;
+    if(!error){
+      closeAuth();
+      document.getElementById('verify-email').textContent = email + ' 로 인증 메일을 보냈습니다.';
+      document.getElementById('verify-ov').classList.add('open');
+      return;
+    }
+  } else {
+    const res = await sb.auth.signInWithPassword({email,password:pw});
+    error = res.error;
+  }
+
+  hideLoading();
+  if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
+  closeAuth();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  toast('로그아웃 완료','info');
+}
+
+// 유저 상태 변화 감지
+sb.auth.onAuthStateChange((event, session)=>{
+  currentUser = session?.user || null;
+  updateAuthUI();
+  if(event==='SIGNED_IN') toast('OK 로그인 완료','ok');
+  if(event==='SIGNED_OUT') toast('로그아웃 완료','info');
+});
+
+function updateAuthUI(){
+  const loggedIn = !!currentUser;
+  const nick = currentUser?.user_metadata?.nickname || currentUser?.email?.split('@')[0] || '';
+  document.getElementById('user-chip').style.display = loggedIn?'block':'none';
+  document.getElementById('user-chip').textContent   = loggedIn? nick : '';
+  document.getElementById('btn-login').style.display = loggedIn?'none':'block';
+  document.getElementById('btn-join').style.display  = loggedIn?'none':'block';
+  document.getElementById('btn-logout').style.display= loggedIn?'block':'none';
+  document.getElementById('auth-status').textContent = loggedIn? nick+' 로그인 중' : '로그인 필요';
+}
+
+// ── UPLOAD ──
+function openUp(){
+  if(!currentUser){toast('로그인 후 업로드 가능합니다','err');openAuth();return;}
+  document.getElementById('up-ov').classList.add('open');
+}
+function closeUp(){document.getElementById('up-ov').classList.remove('open')}
+let upMode='file', selectedFile=null;
+
+function upTab(t,btn){
+  document.querySelectorAll('#up-ov .titem').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); upMode=t;
+  document.getElementById('up-file').style.display=t==='file'?'block':'none';
+  document.getElementById('up-url').style.display=t==='url'?'block':'none';
+}
+
+function pickFile(inp){
+  const f=inp.files[0];if(!f)return;
+  selectedFile=f;
+  const el=document.getElementById('file-ok');
+  el.style.display='block';
+  el.textContent='OK '+f.name+' ('+(f.size/1024).toFixed(1)+'KB)';
+  document.getElementById('dzone').style.background='#f0fff4';
+}
+
+let thumbFile = null, editThumbFile = null;
+
+function pickThumb(inp){
+  const f = inp.files[0]; if(!f) return;
+  thumbFile = f;
+  const prev = document.getElementById('thumb-preview');
+  prev.style.display = 'block';
+  prev.style.backgroundImage = 'url('+URL.createObjectURL(f)+')';
+  document.getElementById('thumb-icon').textContent = '[ OK ] '+f.name;
+}
+
+function pickEditThumb(inp){
+  const f = inp.files[0]; if(!f) return;
+  editThumbFile = f;
+  const prev = document.getElementById('edit-thumb-preview');
+  prev.style.display = 'block';
+  prev.style.backgroundImage = 'url('+URL.createObjectURL(f)+')';
+  document.getElementById('edit-thumb-icon').textContent = '[ OK ] '+f.name;
+}
+
+async function uploadThumb(file, prefix){
+  const path = prefix+'/thumb_'+Date.now()+'_'+file.name;
+  const {error} = await sb.storage.from('game-files').upload(path, file, {contentType:file.type, upsert:true});
+  if(error) return null;
+  const {data:{publicUrl}} = sb.storage.from('game-files').getPublicUrl(path);
+  return publicUrl;
+}
+
+async function doUpload(){
+  const title = document.getElementById('g-name').value.trim();
+  const desc  = document.getElementById('g-desc').value.trim();
+  const cat   = document.getElementById('g-cat').value;
+  const url   = document.getElementById('g-url').value.trim();
+  if(!title){toast('게임 이름을 입력해주세요','err');return;}
+
+  showLoading('업로드 중...');
+  let fileUrl=null, iframeUrl=null;
+
+  if(upMode==='file' && selectedFile){
+    // Supabase Storage에 업로드
+    const path = `games/${Date.now()}_${selectedFile.name}`;
+    const {data:upData, error:upErr} = await sb.storage
+      .from('game-files')
+      .upload(path, selectedFile, {contentType:'text/html'});
+    if(upErr){hideLoading();toast('파일 업로드 실패: '+upErr.message,'err');return;}
+    const {data:{publicUrl}} = sb.storage.from('game-files').getPublicUrl(path);
+    fileUrl = publicUrl;
+    iframeUrl = publicUrl;
+  } else if(upMode==='url' && url){
+    iframeUrl = url;
+  } else {
+    hideLoading(); toast('파일 또는 URL을 입력해주세요','err'); return;
+  }
+
+  let thumbnailUrl = null;
+  if(thumbFile){
+    thumbnailUrl = await uploadThumb(thumbFile, 'thumbs');
+  }
+
+  const {data,error} = await sb.from('games').insert({
+    title, description:desc, category:cat, price:500,
+    file_url:fileUrl, iframe_url:iframeUrl,
+    thumbnail_url:thumbnailUrl,
+    uploader_id:currentUser.id, plays:0
+  }).select().single();
+
+  hideLoading();
+  if(error){toast('업로드 실패: '+error.message,'err');return;}
+  G.unshift(data);
+  renderRank(); renderGrid('all');
+  closeUp();
+  toast('OK "'+title+'" 업로드 완료!','ok');
+  // 초기화
+  selectedFile=null; thumbFile=null;
+  document.getElementById('file-ok').style.display='none';
+  document.getElementById('thumb-preview').style.display='none';
+  document.getElementById('thumb-icon').textContent='[ IMG ]';
+  document.getElementById('g-name').value='';
+  document.getElementById('g-desc').value='';
+  document.getElementById('g-url').value='';
+}
+
+// drag & drop
+const dz=document.getElementById('dzone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='#e8f0e8'});
+dz.addEventListener('dragleave',()=>{dz.style.background='#fff'});
+dz.addEventListener('drop',e=>{
+  e.preventDefault();const f=e.dataTransfer.files[0];
+  if(f?.name.endsWith('.html')){
+    const inp=document.getElementById('finput');
+    const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;
+    pickFile(inp);
+  }else toast('HTML 파일만 가능해요!','err');
+});
+
+// ── LOADING ──
+function showLoading(msg='Loading...'){
+  document.getElementById('loading-msg').textContent=msg;
+  document.getElementById('loading-ov').classList.add('show');
+}
+function hideLoading(){document.getElementById('loading-ov').classList.remove('show')}
+
+// ── TOAST ──
+// ── EDIT GAME ──
+let editFile = null;
+
+function openEdit(g){
+  if(typeof g==='string') g=JSON.parse(g);
+  curG = g;
+  document.getElementById('edit-game-id').value = g.id;
+  document.getElementById('edit-title').value   = g.title||'';
+  document.getElementById('edit-desc').value    = g.description||'';
+  document.getElementById('edit-cat').value     = g.category||'racing';
+  document.getElementById('edit-url').value     = g.iframe_url||'';
+  document.getElementById('edit-file-ok').style.display='none';
+  // 기존 썸네일 미리보기
+  const ep = document.getElementById('edit-thumb-preview');
+  if(g.thumbnail_url){
+    ep.style.display='block';
+    ep.style.backgroundImage='url('+g.thumbnail_url+')';
+    document.getElementById('edit-thumb-icon').textContent='[ OK ] 현재 썸네일';
+  } else {
+    ep.style.display='none';
+    document.getElementById('edit-thumb-icon').textContent='[ IMG ]';
+  }
+  document.getElementById('edit-ov').classList.add('open');
+  editFile = null; editThumbFile = null;
+}
+
+function closeEdit(){ document.getElementById('edit-ov').classList.remove('open') }
+
+function editTab(t,btn){
+  document.querySelectorAll('#edit-ov .titem').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('edit-info').style.display = t==='info'?'block':'none';
+  document.getElementById('edit-file').style.display = t==='file'?'block':'none';
+}
+
+function pickEditFile(inp){
+  const f=inp.files[0]; if(!f)return;
+  editFile=f;
+  const el=document.getElementById('edit-file-ok');
+  el.style.display='block';
+  el.textContent='OK '+f.name+' ('+(f.size/1024).toFixed(1)+'KB)';
+}
+
+async function doEdit(){
+  const id    = document.getElementById('edit-game-id').value;
+  const title = document.getElementById('edit-title').value.trim();
+  const desc  = document.getElementById('edit-desc').value.trim();
+  const cat   = document.getElementById('edit-cat').value;
+  const url   = document.getElementById('edit-url').value.trim();
+  if(!title){ toast('게임 이름을 입력해주세요','err'); return; }
+
+  showLoading('저장 중...');
+  let updateData = { title, description:desc, category:cat };
+  if(editThumbFile){
+    const tUrl = await uploadThumb(editThumbFile, 'thumbs');
+    if(tUrl) updateData.thumbnail_url = tUrl;
+  }
+
+  // 새 파일 업로드
+  if(editFile){
+    const path = `games/${Date.now()}_${editFile.name}`;
+    const {error:upErr} = await sb.storage.from('game-files').upload(path, editFile, {contentType:'text/html', upsert:true});
+    if(upErr){ hideLoading(); toast('파일 업로드 실패','err'); return; }
+    const {data:{publicUrl}} = sb.storage.from('game-files').getPublicUrl(path);
+    updateData.file_url   = publicUrl;
+    updateData.iframe_url = publicUrl;
+  } else if(url){
+    updateData.iframe_url = url;
+  }
+
+  const {error} = await sb.from('games').update(updateData).eq('id',id).eq('uploader_id',currentUser.id);
+  hideLoading();
+  if(error){ toast('수정 실패: '+error.message,'err'); return; }
+
+  // 로컬 업데이트
+  const idx = G.findIndex(g=>g.id===id);
+  if(idx>-1) G[idx] = {...G[idx], ...updateData};
+  renderRank(); renderGrid('all');
+  closeEdit();
+  toast('UPDATED: '+title,'ok');
+}
+
+function confirmDelete(){
+  const title = document.getElementById('edit-title').value;
+  document.getElementById('del-title').textContent = '"'+title+'"';
+  document.getElementById('del-ov').classList.add('open');
+}
+function closeDel(){ document.getElementById('del-ov').classList.remove('open') }
+
+async function doDelete(){
+  const id = document.getElementById('edit-game-id').value;
+  showLoading('삭제 중...');
+  const {error} = await sb.from('games').delete().eq('id',id).eq('uploader_id',currentUser.id);
+  hideLoading();
+  if(error){ toast('삭제 실패: '+error.message,'err'); return; }
+  G = G.filter(g=>g.id!==id);
+  renderRank(); renderGrid('all');
+  closeDel(); closeEdit();
+  toast('DELETED','ok');
+}
+
+let _prevPage = 'home';
+
+function openPurchaseConfirm(g){
+  curG = g;
+  // 현재 활성 페이지 기억
+  const active = document.querySelector('.page.active');
+  _prevPage = active ? active.id.replace('page-','') : 'home';
+  document.getElementById('pc-game-name').textContent = g.title;
+  document.getElementById('pc-price').textContent = '-'+(g.price||500).toLocaleString()+'W';
+  document.getElementById('purchase-confirm-ov').classList.add('open');
+}
+
+function closePurchaseConfirm(){
+  document.getElementById('purchase-confirm-ov').classList.remove('open');
+  // 이전 페이지로 돌아가기
+  const btn = document.getElementById('mb-'+_prevPage);
+  goto(_prevPage, btn);
+}
+
+function goToPurchase(){
+  document.getElementById('purchase-confirm-ov').classList.remove('open');
+  if(!currentUser){ toast('로그인 후 구매 가능합니다','err'); openAuth(); return; }
+  openPay(curG);
+}
+
+function toast(msg,type='info'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type+' show';
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// ── INIT ──
+(async()=>{
+  // 현재 세션 확인
+  const {data:{session}} = await sb.auth.getSession();
+  currentUser = session?.user||null;
+  updateAuthUI();
+  await loadGames();
+})();
+</script>
+</body>
+</html>
