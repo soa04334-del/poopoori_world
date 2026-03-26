@@ -61,10 +61,10 @@ body{background-image:repeating-linear-gradient(0deg,transparent,transparent 1px
 .live-dot{width:6px;height:6px;background:var(--red);border-radius:50%;animation:blink .8s steps(1) infinite;flex-shrink:0}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 .rank-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(2,1fr);gap:8px}
-.rank-card{cursor:pointer;border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);background:var(--win);display:flex;flex-direction:column;overflow:hidden;transition:filter .1s}
+.rank-card{cursor:pointer;border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);background:var(--win);display:flex;flex-direction:column;overflow:hidden;transition:filter .1s;aspect-ratio:1/1}
 .rank-card:hover{filter:brightness(.93)}
 .rank-card:active{border-top:1px solid var(--bd);border-left:1px solid var(--bd);border-right:1px solid var(--bl);border-bottom:1px solid var(--bl)}
-.rc-thumb{flex:1;min-height:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,3.5vw,44px);position:relative;overflow:hidden;border-bottom:1px solid var(--bd)}
+.rc-thumb{width:100%;aspect-ratio:1/1;background:#fff;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,3.5vw,44px);position:relative;overflow:hidden;border-bottom:1px solid var(--bd);flex-shrink:0;background-size:cover;background-position:center;background-repeat:no-repeat}
 .rc-num{position:absolute;top:4px;left:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,.55);color:#fff;padding:1px 5px}
 .rc-num.gold{background:rgba(160,120,0,.85)}.rc-num.silver{background:rgba(90,90,90,.8)}.rc-num.bronze{background:rgba(110,65,20,.8)}
 .rc-plays{position:absolute;bottom:4px;right:4px;font-size:8px;font-weight:700;background:rgba(0,0,0,.55);color:#fff;padding:1px 4px}
@@ -87,7 +87,7 @@ body{background-image:repeating-linear-gradient(0deg,transparent,transparent 1px
 ::-webkit-scrollbar{width:14px}::-webkit-scrollbar-track{background:var(--surface);border-left:1px solid var(--bd)}::-webkit-scrollbar-thumb{background:var(--btn);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd)}
 .gcard{border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);background:var(--win);cursor:pointer}
 .gcard:hover{background:#ccc}
-.gthumb{height:80px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;border-bottom:1px solid var(--bd)}
+.gthumb{width:100%;aspect-ratio:1/1;background:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;border-bottom:1px solid var(--bd);overflow:hidden}
 .gbody{padding:6px 8px}
 .gcat{font-size:7px;color:var(--muted);margin-bottom:2px;letter-spacing:.5px}
 .gname{font-size:9px;font-weight:700;margin-bottom:3px;line-height:1.4}
@@ -205,6 +205,87 @@ body{background-image:repeating-linear-gradient(0deg,transparent,transparent 1px
 .loading-ov{display:none;position:fixed;inset:0;z-index:9800;background:rgba(212,208,200,.7);align-items:center;justify-content:center}
 .loading-ov.show{display:flex}
 .loading-box{background:var(--win);border-top:1px solid var(--bl);border-left:1px solid var(--bl);border-right:2px solid var(--bd);border-bottom:2px solid var(--bd);padding:16px 24px;font-size:10px;font-weight:700}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width:768px){
+  html,body{overflow:auto;height:auto}
+  .desktop{padding:0;min-height:100vh}
+  .window{max-width:100%;min-height:100vh;border:none;border-radius:0}
+  .titlebar{display:none}
+  .sidebar{display:none}
+  .win-body{flex-direction:column}
+  .content{overflow:visible}
+
+  /* 메뉴바 */
+  .menubar{height:44px;padding:0 12px}
+  .mb-nav{display:none}
+  .mb-logo{margin-right:0}
+  .mb-right{gap:8px}
+  .mb-btn{font-size:10px;padding:3px 10px}
+  .mb-clock{display:none}
+  .user-chip{max-width:80px;font-size:9px}
+
+  /* 하단 탭바 */
+  .mobile-tabbar{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;
+    height:52px;background:var(--win);
+    border-top:2px solid var(--bd);
+    box-shadow:0 -1px 0 var(--bl);
+  }
+  .m-tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;cursor:pointer;
+    font-family:'Share Tech Mono',monospace;font-size:8px;font-weight:700;
+    color:var(--muted);border:none;background:none;
+    border-right:1px solid var(--bd);
+  }
+  .m-tab:last-child{border-right:none}
+  .m-tab.active{color:var(--text);background:var(--surface)}
+  .m-tab-icon{font-size:14px;font-weight:700;color:inherit}
+
+  /* 페이지 패딩 (하단 탭바 높이만큼) */
+  .page{padding-bottom:60px}
+
+  /* 홈 랭킹 그리드: 2열 */
+  .home-inner{padding:8px}
+  .rank-grid{
+    grid-template-columns:repeat(2,1fr);
+    grid-template-rows:repeat(5,1fr);
+    gap:6px;
+  }
+
+  /* 카테고리 그리드: 2열 */
+  .cat-inner{padding:8px}
+  .games-grid{grid-template-columns:repeat(2,1fr);gap:6px}
+
+  /* 가이드 */
+  .guide-inner{flex-direction:column;gap:20px;padding:12px;padding-bottom:70px}
+
+  /* 게임 다이얼로그 */
+  .dialog{width:100vw;position:fixed;bottom:0;left:0;right:0;max-height:90vh;border-left:none;border-right:none;border-bottom:none}
+  .dialog-sm{width:100vw}
+  .framebox{height:200px}
+
+  /* 카테고리 탭 스크롤 */
+  .cat-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .cat-tabs::-webkit-scrollbar{display:none}
+  .ctab{white-space:nowrap;flex-shrink:0}
+
+  /* 폰트 크기 조정 */
+  .rc-name{font-size:9px}
+  .gname{font-size:10px}
+
+  /* statusbar 숨김 */
+  .statusbar{display:none}
+
+  /* upload fab */
+  .fab{bottom:60px;right:12px;font-size:10px;padding:8px 14px}
+}
+
+/* 데스크탑에서 탭바 숨김 */
+@media (min-width:769px){
+  .mobile-tabbar{display:none}
+}
 </style>
 </head>
 <body>
@@ -611,6 +692,17 @@ const sb = createClient(
 // ── STATE ──
 let curG = null, tmr = null, tsec = 180, pm = 'toss';
 
+
+function mobileTab(id, btn){
+  goto(id);
+  document.querySelectorAll('.m-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // 메뉴바 mb-item도 동기화
+  document.querySelectorAll('.mb-item').forEach(b=>b.classList.remove('active'));
+  const map={home:'mb-home',cat:'mb-cat',guide:'mb-guide'};
+  document.getElementById(map[id])?.classList.add('active');
+}
+
 function isExpiredGame(gameId){
   if(currentUser){
     const s = window._gameStatus && window._gameStatus[gameId];
@@ -675,8 +767,8 @@ function renderRank(){
   const nc=i=>i===0?'gold':i===1?'silver':i===2?'bronze':'';
   document.getElementById('rank-grid').innerHTML=s.map((g,i)=>`
     <div class="rank-card" onclick='openGame(${JSON.stringify(g)})'>
-      <div class="rc-thumb" style="${g.thumbnail_url?'background:url('+g.thumbnail_url+') center/cover no-repeat':''}">
-        ${g.thumbnail_url?'':'<span>'+( EM[g.category]||'[ ]')+'</span>'}
+      <div class="rc-thumb" style="${g.thumbnail_url?'background-image:url('+g.thumbnail_url+');background-size:cover;background-position:center;background-repeat:no-repeat':''}">
+        ${g.thumbnail_url?'':'<span>'+(EM[g.category]||'[ ]')+'</span>'}
         <div class="rc-num ${nc(i)}">${i+1}</div>
         <div class="rc-plays">▶${(g.plays||0).toLocaleString()}</div>
         ${isExpiredGame(g.id)?'<div class="rc-expired"><div class="rc-expired-lbl">EXPIRED</div></div>':''}
@@ -694,7 +786,7 @@ function renderGrid(f){
   const list=f==='all'?G:G.filter(g=>g.category===f);
   document.getElementById('games-grid').innerHTML=list.map(g=>`
     <div class="gcard ${isExpiredGame(g.id)?'gcard-expired':''}" onclick='openGame(${JSON.stringify(g)})'>
-      <div class="gthumb" style="${g.thumbnail_url?'background:url('+g.thumbnail_url+') center/cover no-repeat;':''}">${g.thumbnail_url?'':(EM[g.category]||'[ ]')}</div>
+      <div class="gthumb" style="${g.thumbnail_url?'background-image:url('+g.thumbnail_url+');background-size:cover;background-position:center':''}">${g.thumbnail_url?'':(EM[g.category]||'[ ]')}</div>
       <div class="gbody">
         <div class="gcat">${CL[g.category]||g.category}</div>
         <div class="gname">${g.title}</div>
@@ -1053,7 +1145,7 @@ async function doUpload(){
     const path = `games/${Date.now()}_${selectedFile.name}`;
     const {data:upData, error:upErr} = await sb.storage
       .from('game-files')
-      .upload(path, selectedFile, {contentType:'text/html'});
+      .upload(path, selectedFile, {contentType:'text/html', cacheControl:'3600', upsert:true});
     if(upErr){hideLoading();toast('파일 업로드 실패: '+upErr.message,'err');return;}
     const {data:{publicUrl}} = sb.storage.from('game-files').getPublicUrl(path);
     fileUrl = publicUrl;
@@ -1254,5 +1346,21 @@ function toast(msg,type='info'){
   await loadGames();
 })();
 </script>
+
+<!-- MOBILE TAB BAR -->
+<div class="mobile-tabbar" id="mobile-tabbar">
+  <button class="m-tab active" id="mtab-home" onclick="mobileTab('home',this)">
+    <span class="m-tab-icon">[ = ]</span>
+    <span>HOME</span>
+  </button>
+  <button class="m-tab" id="mtab-cat" onclick="mobileTab('cat',this)">
+    <span class="m-tab-icon">[ # ]</span>
+    <span>GAMES</span>
+  </button>
+  <button class="m-tab" id="mtab-guide" onclick="mobileTab('guide',this)">
+    <span class="m-tab-icon">[ ? ]</span>
+    <span>GUIDE</span>
+  </button>
+</div>
 </body>
 </html>
