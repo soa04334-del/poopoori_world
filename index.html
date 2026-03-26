@@ -610,6 +610,15 @@ const sb = createClient(
 
 // ── STATE ──
 let curG = null, tmr = null, tsec = 180, pm = 'toss';
+
+function isExpiredGame(gameId){
+  if(currentUser){
+    const s = window._gameStatus && window._gameStatus[gameId];
+    return s==='expired';
+  }
+  const h = JSON.parse(localStorage.getItem('dh')||'{}');
+  return h[gameId]==='expired';
+}
 let currentUser = null;
 let G = []; // 게임 목록 (Supabase에서 로드)
 const CL = {racing:'RACING',healing:'HEALING',fight:'FIGHT',rpg:'RPG'};
